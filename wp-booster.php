@@ -22,7 +22,7 @@ require_once WPB_DIR . '/inc/autoload.php';
 /*plugin environment variables*/
 define('WPB_VERSION', '1.0.0');
 define('WPB_FILE', __FILE__);
-//define('PLUGIN', 'WP Booster');
+define('WPB_URL', plugins_url('wp-booster/'));
 
 function wpBooster()
 {
@@ -33,7 +33,10 @@ function wpBooster()
     return $wpBooster;
 }
 
-wpBooster();
+if (is_admin()) {
+    wpBooster();
+}
+
 
 
 

@@ -28,7 +28,8 @@ class WPBooster
         $this->_wpb_url = plugins_url('wp-booster/');
 //        add_action('plugins_loaded', '_mc4wp_load_plugin', 8);
         add_action('admin_menu', array($this, 'admin_menu'));
-
+        //add_action('wp_ajax_wpb_update_setting', array($this, 'wpb_update_setting'));
+        $my_settings_page = new WPBoosterSetting();
 
 //        add_action('init', array($this,'set_location_trading_hour_days')); //sets the default trading hour days (used by the content type)
 //        add_action('init', array($this,'register_location_content_type')); //register location content type
@@ -53,6 +54,9 @@ class WPBooster
 
     }
 
+
+
+
     public function admin_menu()
     {
         $function = array($this, 'admin_menu_page');
@@ -61,40 +65,105 @@ class WPBooster
     }
 
     public function admin_menu_page()
-    {
+    { return;
         wp_enqueue_style($css = 'wp-booster', $this->_wpb_url . "css/$css.css");
-        $tabs = array('encoding_asset' => 'Compressing Assets', 'lazy_image' => 'Images', 'London'=>'London');
-        $html = '<div class="tab">';
-        foreach($tabs as $key =>$tab){
-            $html.=  '<button class="tablinks" onclick="openTab(event, '.$key.')" id="defaultOpen">'.$tab.'</button>';
+        $tabs = array('encoding_asset' => 'Compressing Assets', 'lazy_image' => 'Images');
+        $html = '';
+
+        $tablinks = '<div class="tab">';
+        $tabcontents = '';
+        $sl = 0;
+        foreach ($tabs as $key => $tab) {
+            $tablinks .= '<button class="wpb_tablinks" id="' . $key . '">' . $tab . '</button>';
+
+            $tabcontents .= '<div id="' . $key . '" class="tabcontent">
+              <span class="close_btn">&times</span>
+              <h3>' . $tab . '</h3>
+              <p>' . $tab . '</p>
+            </div>';
+            $sl++;
         }
-  '<button class="tablinks" onclick="openTab(event, \'London\')" id="defaultOpen">London</button>
-  <button class="tablinks" onclick="openTab(event, \'Paris\')">Paris</button>
-  <button class="tablinks" onclick="openTab(event, \'Tokyo\')">Tokyo</button>
-</div>
 
-<div id="London" class="tabcontent">
-  <span onclick="this.parentElement.style.display=\'none\'" class="topright">&times</span>
-  <h3>London</h3>
-  <p>London is the capital city of England.</p>
-</div>
-
-<div id="Paris" class="tabcontent">
-  <span onclick="this.parentElement.style.display=\'none\'" class="topright">&times</span>
-  <h3>Paris</h3>
-  <p>Paris is the capital of France.</p> 
-</div>
-
-<div id="Tokyo" class="tabcontent">
-  <span onclick="this.parentElement.style.display=\'none\'" class="topright">&times</span>
-  <h3>Tokyo</h3>
-  <p>Tokyo is the capital of Japan.</p>
-</div>';
+        $html .= $tablinks . '</div>';
+        $noticeDiv = '';
+        foreach (array('error', 'success') as $item) {
+            $noticeDiv .= '<div class="' . $item . ' updated notice wpb-notice-' . $item . ' is-dismissible" style="display: none">
+            <p>' . $item . '</p>
+        </div>';
+        }
+        $html .= $noticeDiv . $tabcontents;
         echo $html;
-        wp_enqueue_script($js = 'wp-booster', $this->_wpb_url . "js/$js.js");
+        $this->formOptions();
+        wp_enqueue_script($js = 'wp-booster', $this->_wpb_url . "js/$js.js", array('jquery'));
     }
 
-    public function run()
+    private function formOptions()
+    {
+        ?>
+        <div class="ajax-form">
+            <div class="container">
+                <div class=row>
+                    <div class="col-md-6 col-md-offset-3 form-box">
+                        <form action="" method="post" class="ajax">
+
+                            <h1>Ajax Form</h1>
+                            <?php settings_fields('myplugin_options_group'); ?>
+                            <input name="_token" value="<?php echo wp_create_nonce('wpb_nonce') ?>">
+
+                            <label><b>Name</b></label>
+
+                            <input type="text" placeholder="Enter Your Name" name="name"
+                                   required class="name">
+
+                            <label><b>Email</b></label>
+
+                            <input type="email" placeholder="Enter your Email" name="email"
+                                   required class="email">
+
+                            <label><b>Message</b></label>
+
+                            <input type="textarea" placeholder="Message" name="message"
+                                   required class="message">
+                            <hr>
+
+                            <?php submit_button(); ?>
+                        </form>
+
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+
+        <!--        <div>-->
+        <!--            --><?php //screen_icon();
+        ?>
+        <!--            <h2>My Plugin Page Title</h2>-->
+        <!--            <form method="post" action="options.php">-->
+        <!--                --><?php //settings_fields('myplugin_options_group');
+        ?>
+        <!--                <h3>This is my option</h3>-->
+        <!--                <p>Some text here.</p>-->
+        <!--                <table>-->
+        <!--                    <tr valign="top">-->
+        <!--                        <th scope="row"><label for="myplugin_option_name">Label</label></th>-->
+        <!--                        <td><input type="text" id="myplugin_option_name" name="myplugin_option_name"-->
+        <!--                                   value="--><?php //echo get_option('myplugin_option_name');
+        ?><!--"/></td>-->
+        <!--                    </tr>-->
+        <!--                </table>-->
+        <!--                --><?php //submit_button();
+        ?>
+        <!--            </form>-->
+        <!--        </div>-->
+        <?php
+    }
+
+
+    public
+    function run()
     {
         $this->add_hooks();
 
@@ -102,7 +171,8 @@ class WPBooster
         $checker->run();
     }
 
-    protected function add_hooks()
+    protected
+    function add_hooks()
     {
 
         if (!defined('WPB_SETUP_INITHOOK')) {
@@ -125,17 +195,20 @@ class WPBooster
         register_activation_hook($this->filepath, [$this, 'on_activate']);
     }
 
-    public function on_activate()
+    public
+    function on_activate()
     {
         register_uninstall_hook($this->filepath, 'WPBooster::on_uninstall');
     }
 
-    public function load_textdomain()
+    public
+    function load_textdomain()
     {
-        load_plugin_textdomain('wp-booster');
+        load_plugin_textdomain('wp - booster');
     }
 
-    public function setup()
+    public
+    function setup()
     {
         /*do we gzip in php when caching or is the webserver doing it?*/
         $wpbCacheNoZip = 'WPB_CACHE_NOGZIP';
@@ -148,7 +221,7 @@ class WPBooster
         }
 
         if (!define($wpbCacheChildDir = 'WPB_CACHE_CHILD_DIR')) {
-            define($wpbCacheChildDir, '/cache/wpbooster');
+            define($wpbCacheChildDir, ' / cache / wpbooster');
         }
 
         if (!define($wpbCacheFilePrefix = 'WPB_CACHE_FILE_PREFIX')) {
@@ -182,7 +255,7 @@ class WPBooster
         if (!defined($wpbCacheUrl = 'WPB_CACHE_URL')) {
             if (is_multisite() && apply_filters('wpb_separate_blog_caches', true)) {
                 $blog_id = get_current_blog_id();
-                define($wpbCacheUrl, $wpbWpContentUrl . $wpbCacheChildDir . $blog_id . '/');
+                define($wpbCacheUrl, $wpbWpContentUrl . $wpbCacheChildDir . $blog_id . ' / ');
             } else {
                 define($wpbCacheUrl, $wpbWpContentUrl . $wpbCacheChildDir);
             }
@@ -206,12 +279,14 @@ class WPBooster
         do_action('wpb_setup_done');
     }
 
-    public function version_upgrades_check()
+    public
+    function version_upgrades_check()
     {
         WPBVersionUpdatesHandler::check_installed_and_update($this->version);
     }
 
-    public function check_cache_and_run()
+    public
+    function check_cache_and_run()
     {
         if (WPBCache::cacheavail()) {
             $conf = WPBConfig::instance();
@@ -227,7 +302,7 @@ class WPBooster
                         add_action(constant($wpbHookInto), [$this, 'start_buffering'], self::DEFAULT_HOOK_PRIORITY);
                     }
                 }
-                /*and disable jetpack's site accelerator if JS or css opt. are active*/
+                /*and disable jetpack's site accelerator if JS or css opt . are active */
                 if (class_exists('Jetpack') && apply_filters('wpb_filter_main_disable_jetpack_cdn', true) && ($conf->get('wpb_js') || $conf->get('wpb_css'))) {
                     add_filter('jetpack_force_disable_site_accelerator', '__return_true');
                 }
@@ -237,7 +312,8 @@ class WPBooster
         }
     }
 
-    public function maybe_run_wpb_extra()
+    public
+    function maybe_run_wpb_extra()
     {
         if (apply_filters('wpb_filter_extra_activate', true)) {
             $wpb_imgopt = new WPBImages();
@@ -250,7 +326,8 @@ class WPBooster
         }
     }
 
-    public function maybe_run_partners_tab()
+    public
+    function maybe_run_partners_tab()
     {
         /*load partners tab code if in admin (and not in admin-ajax.php)*/
         if (WPBConfig::is_admin_and_not_ajax()) {
@@ -258,7 +335,8 @@ class WPBooster
         }
     }
 
-    public function maybe_run_criticalcss_tab()
+    public
+    function maybe_run_criticalcss_tab()
     {
         /*load criticalcss tab code if in admin (and not in admin-ajax.php)*/
         if (WPBConfig::is_admin_and_not_ajax() && !WPBUtils::is_plugin_active('wpbooster-criticalcss/wpb_criticss_aas.php')) {
@@ -266,7 +344,8 @@ class WPBooster
         }
     }
 
-    public function hook_page_cache_purge()
+    public
+    function hook_page_cache_purge()
     {
         /*hook into a collection of page cache purge actions if filter allows*/
         if (apply_filters('wpb_filter_main_hookpagecachepurge', true)) {
