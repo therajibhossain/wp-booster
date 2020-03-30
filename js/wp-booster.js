@@ -11,6 +11,8 @@ jQuery(document).ready(function ($) {
                     content.style.display = (content.id == id) ? 'block' : 'none';
                 }
             }
+            tablinks.removeClass('active');
+            $(this).addClass('active');
         });
     }
 
@@ -63,17 +65,3 @@ jQuery(document).ready(function ($) {
         }
     });
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-

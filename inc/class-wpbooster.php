@@ -14,7 +14,6 @@ class WPBooster
     protected $version = null;
     /*filepath string*/
     protected $filepath = null;
-    private $_wpb_url = null;
 
     /**
      * WPBooster constructor.
@@ -25,11 +24,7 @@ class WPBooster
     {
         $this->version = $version;
         $this->filepath = $filepath;
-        $this->_wpb_url = plugins_url('wp-booster/');
-//        add_action('plugins_loaded', '_mc4wp_load_plugin', 8);
-        add_action('admin_menu', array($this, 'admin_menu'));
-        //add_action('wp_ajax_wpb_update_setting', array($this, 'wpb_update_setting'));
-        $my_settings_page = new WPBoosterSetting();
+        new WPBoosterSetting();
 
 //        add_action('init', array($this,'set_location_trading_hour_days')); //sets the default trading hour days (used by the content type)
 //        add_action('init', array($this,'register_location_content_type')); //register location content type
@@ -53,114 +48,6 @@ class WPBooster
     {
 
     }
-
-
-
-
-    public function admin_menu()
-    {
-        $function = array($this, 'admin_menu_page');
-        $icon = $this->_wpb_url . 'images/icon.png';
-        add_menu_page('WP Booster Settings', 'WP Booster', 'manage_options', 'wp-booster', $function, $icon, 4);
-    }
-
-    public function admin_menu_page()
-    { return;
-        wp_enqueue_style($css = 'wp-booster', $this->_wpb_url . "css/$css.css");
-        $tabs = array('encoding_asset' => 'Compressing Assets', 'lazy_image' => 'Images');
-        $html = '';
-
-        $tablinks = '<div class="tab">';
-        $tabcontents = '';
-        $sl = 0;
-        foreach ($tabs as $key => $tab) {
-            $tablinks .= '<button class="wpb_tablinks" id="' . $key . '">' . $tab . '</button>';
-
-            $tabcontents .= '<div id="' . $key . '" class="tabcontent">
-              <span class="close_btn">&times</span>
-              <h3>' . $tab . '</h3>
-              <p>' . $tab . '</p>
-            </div>';
-            $sl++;
-        }
-
-        $html .= $tablinks . '</div>';
-        $noticeDiv = '';
-        foreach (array('error', 'success') as $item) {
-            $noticeDiv .= '<div class="' . $item . ' updated notice wpb-notice-' . $item . ' is-dismissible" style="display: none">
-            <p>' . $item . '</p>
-        </div>';
-        }
-        $html .= $noticeDiv . $tabcontents;
-        echo $html;
-        $this->formOptions();
-        wp_enqueue_script($js = 'wp-booster', $this->_wpb_url . "js/$js.js", array('jquery'));
-    }
-
-    private function formOptions()
-    {
-        ?>
-        <div class="ajax-form">
-            <div class="container">
-                <div class=row>
-                    <div class="col-md-6 col-md-offset-3 form-box">
-                        <form action="" method="post" class="ajax">
-
-                            <h1>Ajax Form</h1>
-                            <?php settings_fields('myplugin_options_group'); ?>
-                            <input name="_token" value="<?php echo wp_create_nonce('wpb_nonce') ?>">
-
-                            <label><b>Name</b></label>
-
-                            <input type="text" placeholder="Enter Your Name" name="name"
-                                   required class="name">
-
-                            <label><b>Email</b></label>
-
-                            <input type="email" placeholder="Enter your Email" name="email"
-                                   required class="email">
-
-                            <label><b>Message</b></label>
-
-                            <input type="textarea" placeholder="Message" name="message"
-                                   required class="message">
-                            <hr>
-
-                            <?php submit_button(); ?>
-                        </form>
-
-                    </div>
-
-                </div>
-
-            </div>
-        </div>
-
-
-        <!--        <div>-->
-        <!--            --><?php //screen_icon();
-        ?>
-        <!--            <h2>My Plugin Page Title</h2>-->
-        <!--            <form method="post" action="options.php">-->
-        <!--                --><?php //settings_fields('myplugin_options_group');
-        ?>
-        <!--                <h3>This is my option</h3>-->
-        <!--                <p>Some text here.</p>-->
-        <!--                <table>-->
-        <!--                    <tr valign="top">-->
-        <!--                        <th scope="row"><label for="myplugin_option_name">Label</label></th>-->
-        <!--                        <td><input type="text" id="myplugin_option_name" name="myplugin_option_name"-->
-        <!--                                   value="--><?php //echo get_option('myplugin_option_name');
-        ?><!--"/></td>-->
-        <!--                    </tr>-->
-        <!--                </table>-->
-        <!--                --><?php //submit_button();
-        ?>
-        <!--            </form>-->
-        <!--        </div>-->
-        <?php
-    }
-
 
     public
     function run()
