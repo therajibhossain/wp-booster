@@ -41,12 +41,17 @@ class WPBooster
 
     public function plugin_activate()
     {
-
+        $this->do_actions('active');
     }
 
     public function plugin_deactivate()
     {
+        $this->do_actions('de-active');
+    }
 
+    private function do_actions($status)
+    {
+        new WPBoosterCompression($status);
     }
 
     public

@@ -6,6 +6,7 @@ class WPBoosterSetting
      * Holds the values to be used in the fields callbacks
      */
     private $options;
+    private static $option_name = 'wpb_option_setting';
     private static $_menu_tabs = array();
 
     /**
@@ -14,6 +15,15 @@ class WPBoosterSetting
     public function __construct()
     {
         $this->set_action_hooks();
+
+
+
+        echo '<pre>', print_r(apache_get_modules()), '</pre>'; exit();
+        if (count(array_intersect(['mod_deflate', 'mod_gzip'],  apache_get_modules())) > 0) {
+            echo 'compression enabled';
+        }
+
+        echo '<pre>', print_r($_SERVER['HTTP_ACCEPT_ENCODING']), '</pre>'; exit();
     }
 
     /*setting action hooks*/
@@ -33,7 +43,8 @@ class WPBoosterSetting
             self::$_menu_tabs = array(
                 'encoding' => array(
                     'title' => 'Compressing Assets', 'subtitle' => 'compressing settings', 'fields' => array(
-                        array('name' => 'encode_js', 'title' => 'Encode JS', 'type' => 'checkbox'),
+                        array('name' => 'gzip_compress', 'title' => 'Enable GZIP compression', 'type' => 'checkbox'),
+                        array('name' => 'browser_cache', 'title' => 'Enable Browser Caching', 'type' => 'checkbox'),
                         array('name' => 'encode_css', 'title' => 'Encode CSS', 'type' => 'checkbox', 'break' => 1),
                         array('name' => 'optimize_html', 'title' => 'Optimize HTML', 'type' => 'checkbox'),
                         array('name' => 'minify_css', 'title' => 'Minify CSS', 'type' => 'checkbox'),
@@ -46,7 +57,6 @@ class WPBoosterSetting
                     )
                 ),
             );
-
 
         // This page will be under "Settings"
         add_options_page(
@@ -64,7 +74,7 @@ class WPBoosterSetting
     public function create_admin_page()
     {
         // Set class property
-        $this->options = get_option('wpb_option_name');
+        $this->options = get_option(self::$option_name);
         wp_enqueue_style($css = 'wp-booster', WPB_URL . "css/$css.css");
 
         $notice_div = '';
@@ -136,7 +146,7 @@ class WPBoosterSetting
     {
         register_setting(
             'wpb_option_group', // Option group
-            'wpb_option_name' // Option name
+            'wpb_option_setting' // Option name
         );
 
         /*adding setting menu options*/
@@ -171,7 +181,7 @@ class WPBoosterSetting
     {
         $name = $arg[0];
         $type = $arg[1];
-        $full_name = "wpb_option_name[$name]";
+        $full_name = "wpb_option_setting[$name]";
         $val = isset($this->options[$name]) ? esc_attr($this->options[$name]) : '';
 
         if ($type === 'checkbox') {
@@ -203,9 +213,9 @@ class WPBoosterSetting
         $token = $form_data['_token'];
         if (!isset($token) || !wp_verify_nonce($token, 'wpb_nonce')) wp_die("<br><br>YOU ARE NOT ALLOWED! ");
 
-        $wpb_option_name = 'wpb_option_name';
-        if (update_option($wpb_option_name, $form_data[$wpb_option_name])) {
+        if (update_option(self::$option_name, $form_data[self::$option_name])) {
             $return = ['response' => 1, 'message' => 'Your settings updated!'];
+            new WPBoosterCompression();
         }
 
         echo json_encode($return);
