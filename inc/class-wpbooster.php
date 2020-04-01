@@ -36,6 +36,7 @@ class WPBooster
 
         register_activation_hook($this->filepath, array($this, 'plugin_activate')); //activate hook
         register_deactivation_hook($this->filepath, array($this, 'plugin_deactivate')); //deactivate hook
+        register_uninstall_hook($this->filepath, 'WPBooster::plugin_uninstall'); //deactivate hook
 
     }
 
@@ -47,6 +48,14 @@ class WPBooster
     public function plugin_deactivate()
     {
         $this->do_actions('de-active');
+    }
+
+    public static function plugin_uninstall()
+    {
+        $option_name = 'wpb_option_setting';
+        if (get_option($option_name) != false) {
+            delete_option($option_name);
+        }
     }
 
     private function do_actions($status)

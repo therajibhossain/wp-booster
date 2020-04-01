@@ -22,11 +22,10 @@ class WPBoosterCompression
         $htaccess = '.htaccess';
         $src = ABSPATH . $htaccess;
 
-        if (!is_writable()) {
+        if (!is_writable($src)) {
             echo '.htaccess file not writable';
             return false;
         }
-
 
         if ($gzip_compress || $browser_cache) {
             if (file_exists($src)) {
@@ -37,7 +36,7 @@ class WPBoosterCompression
             }
         }
 
-        $content = $new_content = (file_get_contents($src));
+        $new_content = (file_get_contents($src));
 
         $new_content .= $this->new_content('WP-Booster-Gzip', $new_content, 'gzip', $gzip_compress);
         $new_content .= $this->new_content('WP-Booster-Browser-Cache', $new_content, 'cache', $browser_cache);

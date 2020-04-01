@@ -15,15 +15,6 @@ class WPBoosterSetting
     public function __construct()
     {
         $this->set_action_hooks();
-
-
-
-        echo '<pre>', print_r(apache_get_modules()), '</pre>'; exit();
-        if (count(array_intersect(['mod_deflate', 'mod_gzip'],  apache_get_modules())) > 0) {
-            echo 'compression enabled';
-        }
-
-        echo '<pre>', print_r($_SERVER['HTTP_ACCEPT_ENCODING']), '</pre>'; exit();
     }
 
     /*setting action hooks*/
