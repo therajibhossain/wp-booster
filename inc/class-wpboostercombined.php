@@ -1,16 +1,94 @@
 <?php
 
-class WPBoosterCompression
+class WPBoosterCombined
 {
     private $_options, $_status;
-    private static $option_name;
+    private static $option_name = 'wpb_option_setting';
 
     public function __construct($option_name, $status = 'active')
     {
         $this->_options = get_option(self::$option_name = $option_name);
         $this->_status = $status;
-        $this->compression();
+
+
+
+
+
+        global $wp_styles;
+        $s = $this->combine_files($wp_styles, 'css', 'front-end.css');
+        die;
+        //echo '<pre>', print_r('status: '.$s), '</pre>'; exit();
     }
+
+    private function optimize_css()
+    {
+        // Print Styles
+        global $wp_styles;
+        $merge_content = "";
+        foreach ($wp_styles->queue as $handle) {
+            // Load the content of the css file
+            if (isset($wp_styles->registered[$handle])) {
+                $src = $wp_styles->registered[$handle]->src;
+
+                $explode = explode('/wp-content/', $src);
+                if (isset($explode[1])) {
+                    $file = WP_CONTENT_DIR . '/' . $explode[1];
+                    if (file_exists($file)) {
+                        $merge_content .= file_get_contents($file);
+                    }
+                }
+            }
+        }
+
+        $merge_content = preg_replace('!/\*[^*]*\*+([^/][^*]*\*+)*/!', '', $merge_content);
+        $merge_content = str_replace(': ', ':', $merge_content);
+        $merge_content = str_replace(array("\n", "\t", '  ', '    ', '    '), '', $merge_content);
+
+        $frontEnd = WP_PLUGIN_DIR . '/' . WPBOOSTER_NAME . '/css/front-end.css';
+        if (file_exists($frontEnd)) {
+            if (file_put_contents($frontEnd, $merge_content)) {
+                return true;
+            };
+        }
+        return false;
+    }
+
+    private function combine_files($wp_queued, $destination_dir, $dest_file_name)
+    {
+        global $wp_styles;
+        echo '<pre>', print_r($wp_styles->queue), '</pre>'; exit();
+        $dest_src = WP_PLUGIN_DIR . '/' . WPBOOSTER_NAME . '/' . $destination_dir . '/' . $dest_file_name;
+        if (file_exists($dest_src)) {
+            $merge_content = "";
+
+            foreach ($wp_queued->queue as $handle) {
+echo '<pre>', print_r($handle), '</pre>';
+                // Load the content of the css/js file
+                if (isset($wp_queued->registered[$handle])) {
+                    $src = $wp_queued->registered[$handle]->src;
+
+                    $explode = explode('/wp-content/', $src);
+                    if (isset($explode[1])) {
+                        $file = WP_CONTENT_DIR . '/' . $explode[1];
+                        if (file_exists($file)) {
+                            $merge_content .= file_get_contents($file);
+                        }
+                    }
+                }
+            }
+            $merge_content = preg_replace('!/\*[^*]*\*+([^/][^*]*\*+)*/!', '', $merge_content);
+            $merge_content = str_replace(': ', ':', $merge_content);
+            $merge_content = str_replace(array("\n", "\t", '  ', '    ', '    '), '', $merge_content);
+
+            if (file_exists($dest_src)) {
+                if (file_put_contents($dest_src, $merge_content)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
 
     private function compression()
     {

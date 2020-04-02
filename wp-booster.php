@@ -21,12 +21,21 @@ require_once WPB_DIR . '/inc/autoload.php';
 
 /*plugin environment variables*/
 define('WPB_VERSION', '1.0.0');
+define('WPBOOSTER_NAME', 'wp-booster');
 define('WPBOOSTER_DIR', plugins_url('wp-booster/'));
 define('WPBOOSTER_STYLES', WPBOOSTER_DIR . 'css/');
 define('WPBOOSTER_SCRIPTS', WPBOOSTER_DIR . 'js/');
 define('WPB_FILE', __FILE__);
 define('WPB_URL', plugins_url('wp-booster/'));
 
+
+
+
+function wpb_admin_scripts()
+{
+    wp_enqueue_script($js = 'wp-booster', WPBOOSTER_DIR . "js/$js.js", array('jquery'));
+}
+add_action('admin_enqueue_scripts', 'wpb_admin_scripts');
 
 function wpBooster()
 {
@@ -40,6 +49,7 @@ function wpBooster()
 if (is_admin()) {
     wpBooster();
 }
+
 
 
 add_action("wp_head", function () {
@@ -66,32 +76,137 @@ function pt_html_minyfy_finish($html)
 }
 
 
-add_action('wp_print_scripts', 'fb_urls_of_enqueued_stuff');
-//add_action('admin_footer', 'fb_urls_of_enqueued_stuff');
+//add_action('wp_print_scripts', 'fb_urls_of_enqueued_stuff');
 function fb_urls_of_enqueued_stuff($handles = array())
 {
     // Print Styles
     global $wp_scripts, $wp_styles;
     $sl = 0;
     foreach ($wp_styles->queue as $handle) {
-        echo $sl++ . ". " . $handle . ": " . $wp_styles->registered[$handle]->src . "<br>";
+        if (isset($wp_styles->registered[$handle])) {
+            //echo $sl++ . ". " . $handle . ": " . $wp_styles->registered[$handle]->src . "<br>";
+        }
+
     }
     echo '<hr>';
-    return;
 
 
-    global $wp_scripts, $wp_styles;
-    global $wp_print_styles;
+    // Array of css files
+    $cssList = array();
 
-    $a = wp_print_styles();
-    echo '<pre>', print_r($a), '</pre>';
-    $i = 0;
-    foreach ($wp_styles->registered as $registered) {
-        echo $i++ . ". " . $registered->handle . ": " . $registered->src . "<br>";
-        //echo '<pre>', print_r($registered), '</pre>';
+    $mergeCSS = "";
+// Loop the css Array
+    foreach ($wp_styles->queue as $handle) {
+        // Load the content of the css file
+        if (isset($wp_styles->registered[$handle])) {
+            //echo $sl++ . ". " . $handle . ": " . $wp_styles->registered[$handle]->src . "<br>";
+            $src = $wp_styles->registered[$handle]->src;
+            //echo $sl++ . ". $src<br>";
+
+            $explode = explode('/wp-content/', $src);
+            if (isset($explode[1])) {
+                $cssList [] = $file = WP_CONTENT_DIR . '/' . $explode[1];
+                if (file_exists($file)) {
+                    echo $sl++ . ". $file<br>";
+                    $mergeCSS .= file_get_contents($file);
+                }
+            }
+
+
+        }
+
     }
 
+//19545 1805kb
+    echo '<pre>', print_r($cssList), '</pre>';die;
+    //exit();
+// Remove comments also applicable in javascript
+    $mergeCSS = preg_replace('!/\*[^*]*\*+([^/][^*]*\*+)*/!', '', $mergeCSS);
+
+// Remove space after colons
+    $mergeCSS = str_replace(': ', ':', $mergeCSS);
+
+// Remove whitespace
+    $mergeCSS = str_replace(array("\n", "\t", '  ', '    ', '    '), '', $mergeCSS);
+
+//Generate Etag
+    $genEtag = md5_file($_SERVER['SCRIPT_FILENAME']);
+
+// call the browser that support gzip, deflate or none at all, if the browser doest      support compression this function will automatically return to FALSE
+//    ob_start('ob_gzhandler');
+//
+//// call the generated etag
+//    header("Etag: " . $genEtag);
+//
+//// Same as the cache-control and this is optional
+//    header("Pragma: public");
+//
+//// Enable caching
+//    header("Cache-Control: public ");
+//
+//// Expire in one day
+//    header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 86400) . ' GMT');
+//
+//// Set the correct MIME type, because Apache won't set it for us
+//    header("Content-type: text/javascript");
+//
+//// Set accept-encoding
+//    header('Vary: Accept-Encoding');
+
+// Write everything out
+    $frontEnd = WP_PLUGIN_DIR . '/' . WPBOOSTER_NAME . '/css/front-end.css';
+    echo $frontEnd . "<br>";
+    //file_put_contents($frontEnd, $mergeCSS);
+    if (file_exists($frontEnd)) {
+        echo "exists: " . $frontEnd;
+        file_put_contents($frontEnd, $mergeCSS);
+    }
+    echo($mergeCSS);
+    die;
+
 }
+
+function inspect_scripts() {
+    global $wp_scripts;
+    echo '<hr>js<pre>', print_r($wp_scripts->queue), '</pre>';
+}
+add_action( 'wp_print_scripts', 'inspect_scripts' );
+
+function inspect_styles() {
+    global $wp_styles;
+    echo '<hr>css<pre>', print_r($wp_styles->queue), '</pre>';
+}
+add_action( 'wp_print_styles', 'inspect_styles' );
+
+
+/**
+ * Print enqueued style/script handles
+ * https://lakewood.media/list-enqueued-scripts-handle/
+ */
+function lakewood_print_scripts_styles()
+{
+    if (!is_admin() && is_user_logged_in() && current_user_can('manage_options')) {
+        // Print Scripts
+        global $wp_scripts;
+        foreach ($wp_scripts->queue as $handle) :
+            echo '<div style="margin: 5px 3%; border: 1px solid #eee; padding: 20px;">Script <br />';
+            echo "Handle: " . $handle . '<br />';
+            echo "URL: " . $wp_scripts->registered[$handle]->src;
+            echo '</div>';
+        endforeach;
+
+        // Print Styles
+        global $wp_styles;
+        foreach ($wp_styles->queue as $handle) :
+            echo '<div style="margin: 5px 3%; border: 1px solid #eee; padding: 20px; background-color: #e0e0e0;">Style <br />';
+            echo "Handle: " . $handle . '<br />';
+            //echo "URL: " . $wp_styles->registered[$handle]->src;
+            echo '</div>';
+        endforeach;
+    }
+}
+
+//add_action('wp_print_scripts', 'lakewood_print_scripts_styles', 101);
 
 
 function crunchify_print_scripts_styles()

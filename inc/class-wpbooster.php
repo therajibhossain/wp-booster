@@ -4,6 +4,7 @@ if (!defined('ABSPATH')) {
     exit();
 }
 
+use WPBoosterConfig as config;
 
 class WPBooster
 {
@@ -22,10 +23,13 @@ class WPBooster
      */
     public function __construct($version, $filepath)
     {
+        //add_action('wp_print_scripts', array($this, 'fb_urls_of_enqueued_stuff'));
+        //die;
+
+
         $this->version = $version;
         $this->filepath = $filepath;
         new WPBoosterSetting();
-
 //        add_action('init', array($this,'set_location_trading_hour_days')); //sets the default trading hour days (used by the content type)
 //        add_action('init', array($this,'register_location_content_type')); //register location content type
 //        add_action('add_meta_boxes', array($this,'add_location_meta_boxes')); //add meta boxes
@@ -40,8 +44,112 @@ class WPBooster
 
     }
 
+
+
+
+    //add_action('wp_print_scripts', 'fb_urls_of_enqueued_stuff');
+    public function fb_urls_of_enqueued_stuff($handles = array())
+    {
+        // Print Styles
+        global $wp_scripts, $wp_styles;
+        $sl = 0;
+        foreach ($wp_styles->queue as $handle) {
+            if (isset($wp_styles->registered[$handle])) {
+                //echo $sl++ . ". " . $handle . ": " . $wp_styles->registered[$handle]->src . "<br>";
+            }
+
+        }
+        echo '<hr>';
+
+
+        // Array of css files
+        $cssList = array();
+
+        $mergeCSS = "";
+// Loop the css Array
+        foreach ($wp_styles->queue as $handle) {
+            // Load the content of the css file
+            if (isset($wp_styles->registered[$handle])) {
+                //echo $sl++ . ". " . $handle . ": " . $wp_styles->registered[$handle]->src . "<br>";
+                $src = $wp_styles->registered[$handle]->src;
+                //echo $sl++ . ". $src<br>";
+
+                $explode = explode('/wp-content/', $src);
+                if (isset($explode[1])) {
+                    $cssList [] = $file = WP_CONTENT_DIR . '/' . $explode[1];
+                    if (file_exists($file)) {
+                        echo $sl++ . ". $file<br>";
+                        $mergeCSS .= file_get_contents($file);
+                    }
+                }
+
+
+            }
+
+        }
+
+//19545 1805kb
+        echo '<pre>', print_r($cssList), '</pre>';
+        //exit();
+// Remove comments also applicable in javascript
+        $mergeCSS = preg_replace('!/\*[^*]*\*+([^/][^*]*\*+)*/!', '', $mergeCSS);
+
+// Remove space after colons
+        $mergeCSS = str_replace(': ', ':', $mergeCSS);
+
+// Remove whitespace
+        $mergeCSS = str_replace(array("\n", "\t", '  ', '    ', '    '), '', $mergeCSS);
+
+//Generate Etag
+        $genEtag = md5_file($_SERVER['SCRIPT_FILENAME']);
+
+// call the browser that support gzip, deflate or none at all, if the browser doest      support compression this function will automatically return to FALSE
+//    ob_start('ob_gzhandler');
+//
+//// call the generated etag
+//    header("Etag: " . $genEtag);
+//
+//// Same as the cache-control and this is optional
+//    header("Pragma: public");
+//
+//// Enable caching
+//    header("Cache-Control: public ");
+//
+//// Expire in one day
+//    header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 86400) . ' GMT');
+//
+//// Set the correct MIME type, because Apache won't set it for us
+//    header("Content-type: text/javascript");
+//
+//// Set accept-encoding
+//    header('Vary: Accept-Encoding');
+
+// Write everything out
+        $frontEnd = WP_PLUGIN_DIR . '/' . WPBOOSTER_NAME . '/css/front-end.css';
+        echo $frontEnd . "<br>";
+        //file_put_contents($frontEnd, $mergeCSS);
+        if (file_exists($frontEnd)) {
+            echo "exists: " . $frontEnd;
+            file_put_contents($frontEnd, $mergeCSS);
+        }
+        echo($mergeCSS);
+        die;
+
+    }
+
+
+
+
+
+
+
+
+
     public function plugin_activate()
     {
+        foreach (config::option_name() as $item) {
+            update_option($item, null);
+        }
         $this->do_actions('active');
     }
 
@@ -52,9 +160,10 @@ class WPBooster
 
     public static function plugin_uninstall()
     {
-        $option_name = 'wpb_option_setting';
-        if (get_option($option_name) != false) {
-            delete_option($option_name);
+        foreach (config::option_name() as $item) {
+            if (get_option($item) != false) {
+                delete_option($item);
+            }
         }
     }
 

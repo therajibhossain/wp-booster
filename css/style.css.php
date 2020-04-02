@@ -31,5 +31,5 @@ function compress($buffer) {
 }
 
 
- include('front-end.css');
+ include_once('front-end.css');
 ob_end_flush();

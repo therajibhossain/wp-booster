@@ -24,14 +24,14 @@ jQuery(document).ready(function ($) {
             submit.spin();
 
             e.preventDefault();
-            var formData = $form.serialize();
             $.ajax({
                 action: 'wpb_update_setting',
                 method: "POST",
                 dataType: 'json',
                 data: {
                     action: 'wpb_update_setting',
-                    formData: formData
+                    formData: $form.serialize(),
+                    wpb_section: $(this).attr('id'),
                 },
                 url: ajaxurl,
 
