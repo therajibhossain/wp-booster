@@ -49,7 +49,7 @@ class WPBoosterSetting
      */
     public function create_admin_page()
     {
-        wp_enqueue_style($css = 'wp-booster', WPB_URL . "css/$css.css");
+        wp_enqueue_style($css = 'wp-booster-admin', WPBOOSTER_URL . "css/$css.css");
         // Set class property
         foreach (config::option_name() as $item) {
             $this->options[$item] = get_option($item);
@@ -186,10 +186,6 @@ class WPBoosterSetting
     /*updating all admin settings*/
     public function wpb_update_setting()
     {
-        config::boot_settings(config::option_name()[1]);
-        return;
-
-
         $return = ['response' => 0, 'message' => 'noting changed!'];
         $form_data = array();
         parse_str($_POST['formData'], $form_data);
@@ -201,7 +197,7 @@ class WPBoosterSetting
 
         if (update_option($option_name, isset($form_data[$option_name]) ? $form_data[$option_name] : '')) {
             config::boot_settings($option_name);
-            $return = ['response' => 1, 'message' => 'Your settings updated!'];
+            $return = ['response' => 1, 'message' => $option_name . '--- settings updated! To view update, refresh your site'];
         }
 
         echo json_encode($return);

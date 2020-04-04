@@ -1,246 +1,104 @@
 <?php
 
+use WPBoosterConfig as config;
+
 class WPBoosterCombined
 {
     private $_options, $_status;
-    private static $option_name = 'wpb_option_setting';
+    private static $option_name;
 
     public function __construct($option_name, $status = 'active')
     {
         $this->_options = get_option(self::$option_name = $option_name);
         $this->_status = $status;
-
-
-
-
-
-        global $wp_styles;
-        $s = $this->combine_files($wp_styles, 'css', 'front-end.css');
-        die;
-        //echo '<pre>', print_r('status: '.$s), '</pre>'; exit();
+        $this->combine();
     }
 
-    private function optimize_css()
+    private function combine()
     {
-        // Print Styles
-        global $wp_styles;
-        $merge_content = "";
-        foreach ($wp_styles->queue as $handle) {
-            // Load the content of the css file
-            if (isset($wp_styles->registered[$handle])) {
-                $src = $wp_styles->registered[$handle]->src;
+        $combine_css = (isset($this->_options['combine_css'])) ? $this->_options['combine_css'] : false;
+        $combine_js = (isset($this->_options['combine_js'])) ? $this->_options['combine_js'] : false;
 
-                $explode = explode('/wp-content/', $src);
-                if (isset($explode[1])) {
-                    $file = WP_CONTENT_DIR . '/' . $explode[1];
-                    if (file_exists($file)) {
-                        $merge_content .= file_get_contents($file);
-                    }
-                }
-            }
-        }
-
-        $merge_content = preg_replace('!/\*[^*]*\*+([^/][^*]*\*+)*/!', '', $merge_content);
-        $merge_content = str_replace(': ', ':', $merge_content);
-        $merge_content = str_replace(array("\n", "\t", '  ', '    ', '    '), '', $merge_content);
-
-        $frontEnd = WP_PLUGIN_DIR . '/' . WPBOOSTER_NAME . '/css/front-end.css';
-        if (file_exists($frontEnd)) {
-            if (file_put_contents($frontEnd, $merge_content)) {
-                return true;
-            };
-        }
-        return false;
-    }
-
-    private function combine_files($wp_queued, $destination_dir, $dest_file_name)
-    {
-        global $wp_styles;
-        echo '<pre>', print_r($wp_styles->queue), '</pre>'; exit();
-        $dest_src = WP_PLUGIN_DIR . '/' . WPBOOSTER_NAME . '/' . $destination_dir . '/' . $dest_file_name;
-        if (file_exists($dest_src)) {
-            $merge_content = "";
-
-            foreach ($wp_queued->queue as $handle) {
-echo '<pre>', print_r($handle), '</pre>';
-                // Load the content of the css/js file
-                if (isset($wp_queued->registered[$handle])) {
-                    $src = $wp_queued->registered[$handle]->src;
-
-                    $explode = explode('/wp-content/', $src);
-                    if (isset($explode[1])) {
-                        $file = WP_CONTENT_DIR . '/' . $explode[1];
-                        if (file_exists($file)) {
-                            $merge_content .= file_get_contents($file);
-                        }
-                    }
-                }
-            }
-            $merge_content = preg_replace('!/\*[^*]*\*+([^/][^*]*\*+)*/!', '', $merge_content);
-            $merge_content = str_replace(': ', ':', $merge_content);
-            $merge_content = str_replace(array("\n", "\t", '  ', '    ', '    '), '', $merge_content);
-
-            if (file_exists($dest_src)) {
-                if (file_put_contents($dest_src, $merge_content)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-
-    private function compression()
-    {
-        $gzip_compress = (isset($this->_options['gzip_compress'])) ? $this->_options['gzip_compress'] : false;
-        $browser_cache = (isset($this->_options['browser_cache'])) ? $this->_options['browser_cache'] : false;
         if ($this->_status == 'de-active') {
-            $gzip_compress = $browser_cache = false;
-        }
-        $htaccess = '.htaccess';
-        $src = ABSPATH . $htaccess;
-
-        if (!is_writable($src)) {
-            echo '.htaccess file not writable';
-            return false;
+            $combine_js = $combine_js = false;
         }
 
-        if ($gzip_compress || $browser_cache) {
-            if (file_exists($src)) {
-                $dest = WPB_DIR . 'backup/' . $htaccess;
-                if (!file_exists($dest)) {
-                    copy($src, $dest);
+        if ($combine_css || $combine_js) {
+            //$html = config::homeHtml();
+            $html = wp_remote_retrieve_body(wp_remote_get((home_url())));
+
+            $head = '';
+            if ($html) {
+                $explode = explode('<head>', $html);
+                if (isset($explode[1])) {
+                    $explode = explode('</head>', $explode[1]);
+                    $head = $explode[0];
+                }
+            }
+
+            if ($head) {
+                $dom = new DOMDocument;
+                $dom->loadHTML(mb_convert_encoding($head, 'HTML-ENTITIES', 'UTF-8'));
+                if ($combine_css) {
+                    $this->merge_content($dom, 'link', $combine_css);
+                }
+                if ($combine_js) {
+                    $this->merge_content($dom, 'script', $combine_js);
                 }
             }
         }
-
-        $new_content = (file_get_contents($src));
-
-        $new_content .= $this->new_content('WP-Booster-Gzip', $new_content, 'gzip', $gzip_compress);
-        $new_content .= $this->new_content('WP-Booster-Browser-Cache', $new_content, 'cache', $browser_cache);
-
-        file_put_contents($src, $new_content);
-        return true;
     }
 
-    private function new_content($wpb_prefix, &$new_content, $type, $enable)
+    private function merge_content($dom, $tag, $option_name)
     {
-        $begin = explode("# BEGIN $wpb_prefix", $new_content);
-        if (isset($begin[0])) {
-            $new_content = $begin[0];
+        $tag_src = array();
+        $merge_content = '';
+        $new_line = "\n";
+        $nodes = $dom->getElementsByTagName($tag);
+        if ($nodes) {
+            foreach ($nodes as $node) {
+                if ($tag === 'link') {
+                    $get_attr = ($node->getAttribute('rel') === 'stylesheet') ? 'href' : '';
+                } else {
+                    $get_attr = 'src';
+                }
+
+                if (isset($get_attr)) {
+                    $href = $node->getAttribute($get_attr);
+                    $merged = $this->get_content($href);
+                    if ($merged) {
+                        $merge_content .= $merged;
+                        $tag_src[] = $href;
+                    }
+                }
+            }
+
+            $ext = ($tag === 'link') ? 'css' : 'js';
+            $dest_src = WP_PLUGIN_DIR . '/' . WPBOOSTER_NAME . '/' . $ext . '/wp-booster.' . $ext;
+            if (file_exists($dest_src) && $merge_content) {
+                $merge_content = preg_replace('!/\*[^*]*\*+([^/][^*]*\*+)*/!', '', $merge_content);
+                $merge_content = str_replace(': ', ':', $merge_content);
+                $merge_content = str_replace(array("\n", "\t", '  ', '    ', '    '), '', $merge_content);
+
+                $comment = $new_line . config::get_comment('/*', '*/', "wp-booster-combined-sources: "
+                        . implode(', ', $tag_src), 0) . $new_line . config::get_comment();
+                $merged = file_put_contents($dest_src, $merge_content . $comment);
+            }
         }
 
-        if (isset($begin[1])) {
-            $end = explode("# END $wpb_prefix", $begin[1]);
-            $new_content .= isset($end[1]) ? $end[1] : $end[0];
+        if ($tag_src && isset($merged)) {
+            update_option('wpbooster_src_' . $option_name, $tag_src);
+            return true;
         }
-        $new_content = trim($new_content);
-        if ($enable) {
-            $new_content .= ($type == 'gzip') ? $this->gzip_content($wpb_prefix) : $this->browser_cache_content($wpb_prefix);
-        }
+        return false;
     }
 
-    private function gzip_content($wpb_gzip)
+    private function get_content($src)
     {
-        return "\n\n\n# BEGIN $wpb_gzip
-<IfModule mod_filter.c>
-	<IfModule mod_deflate.c>
-        # Compress HTML, CSS, JavaScript, Text, XML and fonts
-		AddType application/vnd.ms-fontobject .eot
-		AddType font/ttf .ttf
-		AddType font/otf .otf
-		AddType font/x-woff .woff
-		AddType image/svg+xml .svg
-		
-		AddOutputFilterByType DEFLATE application/javascript
-		AddOutputFilterByType DEFLATE application/rss+xml
-		AddOutputFilterByType DEFLATE application/vnd.ms-fontobject
-		AddOutputFilterByType DEFLATE application/x-font
-		AddOutputFilterByType DEFLATE application/x-font-opentype
-		AddOutputFilterByType DEFLATE application/x-font-otf
-		AddOutputFilterByType DEFLATE application/x-font-truetype
-		AddOutputFilterByType DEFLATE application/x-font-ttf
-		AddOutputFilterByType DEFLATE application/x-font-woff
-		AddOutputFilterByType DEFLATE application/x-javascript
-		AddOutputFilterByType DEFLATE application/xhtml+xml
-		AddOutputFilterByType DEFLATE application/xml
-		AddOutputFilterByType DEFLATE font/opentype
-		AddOutputFilterByType DEFLATE font/otf
-		AddOutputFilterByType DEFLATE font/ttf
-		AddOutputFilterByType DEFLATE font/woff
-		AddOutputFilterByType DEFLATE image/svg+xml
-		AddOutputFilterByType DEFLATE image/x-icon
-		AddOutputFilterByType DEFLATE text/css
-		AddOutputFilterByType DEFLATE text/html
-		AddOutputFilterByType DEFLATE text/javascript
-		AddOutputFilterByType DEFLATE text/plain
-		AddOutputFilterByType DEFLATE text/xml
-		
-        # Remove browser bugs (only needed for really old browsers)
-		BrowserMatch ^Mozilla/4 gzip-only-text/html
-		BrowserMatch ^Mozilla/4\.0[678] no-gzip
-		BrowserMatch \bMSIE !no-gzip !gzip-only-text/html
-		Header append Vary User-Agent
-	</IfModule>
-</IfModule>
-# END $wpb_gzip";
-    }
-
-    private function browser_cache_content($wpb_cache)
-    {
-        return "\n\n# BEGIN $wpb_cache
-<IfModule mod_expires.c>
-    ExpiresActive on
-    
-    # Perhaps better to whitelist expires rules? Perhaps.
-    ExpiresDefault \"access plus 1 month\"
-    
-    # cache.appcache needs re-requests in FF 3.6 (thanks Remy ~Introducing HTML5)
-    ExpiresByType text/cache-manifest \"access plus 0 seconds\"
-    
-    # Your document HTML
-    ExpiresByType text/html \"access plus 0 seconds\"
-    
-    # Data
-    ExpiresByType text/xml \"access plus 0 seconds\"
-    ExpiresByType application/xml \"access plus 0 seconds\"
-    ExpiresByType application/json \"access plus 0 seconds\"
-    
-    # Feed
-    ExpiresByType application/rss+xml \"access plus 1 hour\"
-    ExpiresByType application/atom+xml \"access plus 1 hour\"
-    
-    # Favicon (cannot be renamed)
-    ExpiresByType image/x-icon \"access plus 1 week\"
-    
-    # Media: images, video, audio
-    ExpiresByType image/gif \"access plus 1 month\"
-    ExpiresByType image/png \"access plus 1 month\"
-    ExpiresByType image/jpg \"access plus 1 month\"
-    ExpiresByType image/jpeg \"access plus 1 month\"
-    ExpiresByType video/ogg \"access plus 1 month\"
-    ExpiresByType audio/ogg \"access plus 1 month\"
-    ExpiresByType video/mp4 \"access plus 1 month\"
-    ExpiresByType video/webm \"access plus 1 month\"
-    
-    # HTC files (css3pie)
-    ExpiresByType text/x-component \"access plus 1 month\"
-    
-    # Web fonts
-    ExpiresByType application/x-font-ttf \"access plus 1 month\"
-    ExpiresByType font/opentype \"access plus 1 month\"
-    ExpiresByType application/x-font-woff \"access plus 1 month\"
-    ExpiresByType image/svg+xml \"access plus 1 month\"
-    ExpiresByType application/vnd.ms-fontobject \"access plus 1 month\"
-    
-    # CSS and JavaScript
-    ExpiresByType text/css \"access plus 1 year\"
-    ExpiresByType application/javascript \"access plus 1 year\"
-    
-    <IfModule mod_headers.c>
-        Header append Cache-Control \"public\"
-    </IfModule>
-</IfModule>
-# END $wpb_cache";
+        $explode = explode(home_url(), $src);
+        if (isset($explode[1]) && (strpos($explode[1], '.php') === false)) {
+            return file_get_contents($src);
+        }
+        return false;
     }
 }

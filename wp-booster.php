@@ -20,28 +20,26 @@ require_once WPB_DIR . '/inc/autoload.php';
 
 
 /*plugin environment variables*/
-define('WPB_VERSION', '1.0.0');
+define('WPBOOSTER_VERSION', '1.0.0');
 define('WPBOOSTER_NAME', 'wp-booster');
-define('WPBOOSTER_DIR', plugins_url('wp-booster/'));
-define('WPBOOSTER_STYLES', WPBOOSTER_DIR . 'css/');
-define('WPBOOSTER_SCRIPTS', WPBOOSTER_DIR . 'js/');
-define('WPB_FILE', __FILE__);
-define('WPB_URL', plugins_url('wp-booster/'));
-
-
+define('WPBOOSTER_FILE', __FILE__);
+define('WPBOOSTER_URL', plugins_url('wp-booster/'));
+define('WPBOOSTER_STYLES', WPBOOSTER_URL . 'css/');
+define('WPBOOSTER_SCRIPTS', WPBOOSTER_URL . 'js/');
 
 
 function wpb_admin_scripts()
 {
-    wp_enqueue_script($js = 'wp-booster', WPBOOSTER_DIR . "js/$js.js", array('jquery'));
+    wp_enqueue_script($js = 'wp-booster-admin', WPBOOSTER_SCRIPTS . "/$js.js", array('jquery'));
 }
+
 add_action('admin_enqueue_scripts', 'wpb_admin_scripts');
 
 function wpBooster()
 {
     static $wpBooster = null;
     if (null === $wpBooster) {
-        $wpBooster = new WPBooster(WPB_VERSION, WPB_FILE);
+        $wpBooster = new WPBooster(WPBOOSTER_VERSION, WPBOOSTER_FILE);
     }
     return $wpBooster;
 }
@@ -49,7 +47,6 @@ function wpBooster()
 if (is_admin()) {
     wpBooster();
 }
-
 
 
 add_action("wp_head", function () {
@@ -118,7 +115,8 @@ function fb_urls_of_enqueued_stuff($handles = array())
     }
 
 //19545 1805kb
-    echo '<pre>', print_r($cssList), '</pre>';die;
+    echo '<pre>', print_r($cssList), '</pre>';
+    die;
     //exit();
 // Remove comments also applicable in javascript
     $mergeCSS = preg_replace('!/\*[^*]*\*+([^/][^*]*\*+)*/!', '', $mergeCSS);
@@ -166,17 +164,21 @@ function fb_urls_of_enqueued_stuff($handles = array())
 
 }
 
-function inspect_scripts() {
+function inspect_scripts()
+{
     global $wp_scripts;
     echo '<hr>js<pre>', print_r($wp_scripts->queue), '</pre>';
 }
-add_action( 'wp_print_scripts', 'inspect_scripts' );
 
-function inspect_styles() {
+//add_action( 'wp_print_scripts', 'inspect_scripts' );
+
+function inspect_styles()
+{
     global $wp_styles;
     echo '<hr>css<pre>', print_r($wp_styles->queue), '</pre>';
 }
-add_action( 'wp_print_styles', 'inspect_styles' );
+
+//add_action( 'wp_print_styles', 'inspect_styles' );
 
 
 /**
@@ -260,7 +262,7 @@ if (!function_exists('uncoverwp_async_scripts')) :
         }
     }
 
-    add_filter('clean_url', 'uncoverwp_async_scripts', 11, 1);
+    // add_filter('clean_url', 'uncoverwp_async_scripts', 11, 1);
 endif;
 if (!function_exists('uncoverwp_defer_scripts')) :
     /**
@@ -277,7 +279,7 @@ if (!function_exists('uncoverwp_defer_scripts')) :
         }
     }
 
-    add_filter('clean_url', 'uncoverwp_defer_scripts', 11, 1);
+//    add_filter('clean_url', 'uncoverwp_defer_scripts', 11, 1);
 endif;
 
 // Enqueue scripts
