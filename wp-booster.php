@@ -18,7 +18,6 @@ if (!defined('ABSPATH')) die('Direct access not allowed');
 define('WPB_DIR', plugin_dir_path(__FILE__));
 require_once WPB_DIR . '/inc/autoload.php';
 
-
 /*plugin environment variables*/
 define('WPBOOSTER_VERSION', '1.0.0');
 define('WPBOOSTER_NAME', 'wp-booster');
@@ -44,16 +43,60 @@ function wpBooster()
     return $wpBooster;
 }
 
-if (is_admin()) {
-    wpBooster();
+function wpBoosterFront()
+{
+    static $wpBooster = null;
+    if (null === $wpBooster) {
+        $wpBooster = new WPBoosterFrontend();
+    }
+    return $wpBooster;
 }
 
+if (is_admin()) {
+    wpBooster();
 
-add_action("wp_head", function () {
-    echo "\n";
-    echo '<link rel="stylesheet" href="' . WPBOOSTER_STYLES . 'style.css.php' . '" type="text/css" media="screen" />';
-    echo "\n";
-});
+
+//    $html = wp_remote_retrieve_body(wp_remote_get((home_url())));
+//    echo $html;
+} else {
+    wpBoosterFront();
+}
+//add_action("wp_head", function () {
+//    echo '<h1>rhossain.php</h1>';die;
+//});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//add_action("wp_head", function () {
+//    echo "\n";
+//    echo '<link rel="stylesheet" href="' . WPBOOSTER_STYLES . 'wp-booster-css.php' . '" type="text/css" media="screen" />';
+//    echo "\n";
+//});
 
 
 //add_action('get_header', 'pt_html_minify_start');

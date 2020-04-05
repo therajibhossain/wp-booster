@@ -186,6 +186,10 @@ class WPBoosterSetting
     /*updating all admin settings*/
     public function wpb_update_setting()
     {
+        config::boot_settings(config::option_name()[1]);
+        die;
+
+
         $return = ['response' => 0, 'message' => 'noting changed!'];
         $form_data = array();
         parse_str($_POST['formData'], $form_data);
@@ -203,6 +207,4 @@ class WPBoosterSetting
         echo json_encode($return);
         wp_die();
     }
-
-
 }

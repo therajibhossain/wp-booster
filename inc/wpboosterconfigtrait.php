@@ -2,7 +2,7 @@
 
 trait WPBoosterConfig
 {
-    private static $extensions = array(), $_menu_tabs, $option_name;
+    private static $extensions = array(), $_menu_tabs, $option_name, $option_value = array();
 
     private function isExtensionLoaded($extension_name)
     {
@@ -1685,5 +1685,15 @@ var mc4wp_forms_config = [];
     {
         $date = ($date != false) ? date('F d, Y h:i:sA') : '';
         return "$start " . $comment . " " . $date . " $end";
+    }
+
+    public static function option_value()
+    {
+        if (!self::$option_value) {
+            foreach (self::option_name() as $item) {
+                self::$option_value[$item] = get_option($item);
+            }
+        }
+        return self::$option_value;
     }
 }

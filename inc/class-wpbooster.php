@@ -41,7 +41,6 @@ class WPBooster
         register_activation_hook($this->filepath, array($this, 'plugin_activate')); //activate hook
         register_deactivation_hook($this->filepath, array($this, 'plugin_deactivate')); //deactivate hook
         register_uninstall_hook($this->filepath, 'WPBooster::plugin_uninstall'); //deactivate hook
-
     }
 
 
@@ -136,13 +135,6 @@ class WPBooster
         die;
 
     }
-
-
-
-
-
-
-
 
 
     public function plugin_activate()
