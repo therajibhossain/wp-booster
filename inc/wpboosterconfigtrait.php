@@ -1696,4 +1696,9 @@ var mc4wp_forms_config = [];
         }
         return self::$option_value;
     }
+
+    public static function combined_option($type = 'css')
+    {
+        return self::option_tabs()[self::option_name()[1]]['fields'][$type == 'css' ? 0 : 1]['name'];
+    }
 }

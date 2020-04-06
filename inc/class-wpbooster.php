@@ -8,9 +8,6 @@ use WPBoosterConfig as config;
 
 class WPBooster
 {
-    const INIT_EARLIAR_PRIORITY = -1;
-    const DEFAULT_HOOK_PRIORITY = 2;
-
     /*version string*/
     protected $version = null;
     /*filepath string*/
@@ -26,114 +23,22 @@ class WPBooster
         //add_action('wp_print_scripts', array($this, 'fb_urls_of_enqueued_stuff'));
         //die;
 
-
         $this->version = $version;
         $this->filepath = $filepath;
-        new WPBoosterSetting();
-//        add_action('init', array($this,'set_location_trading_hour_days')); //sets the default trading hour days (used by the content type)
-//        add_action('init', array($this,'register_location_content_type')); //register location content type
-//        add_action('add_meta_boxes', array($this,'add_location_meta_boxes')); //add meta boxes
-//        add_action('save_post_wp_locations', array($this,'save_location')); //save location
-//        add_action('admin_enqueue_scripts', array($this,'enqueue_admin_scripts_and_styles')); //admin scripts and styles
-//        add_action('wp_enqueue_scripts', array($this,'enqueue_public_scripts_and_styles')); //public scripts and styles
-//        add_filter('the_content', array($this,'prepend_location_meta_to_content')); //gets our meta data and dispayed it before the content
 
         register_activation_hook($this->filepath, array($this, 'plugin_activate')); //activate hook
         register_deactivation_hook($this->filepath, array($this, 'plugin_deactivate')); //deactivate hook
         register_uninstall_hook($this->filepath, 'WPBooster::plugin_uninstall'); //deactivate hook
+
+        add_action('admin_enqueue_scripts', array($this, 'admin_scripts'));
+        new WPBoosterSetting();
     }
 
-
-
-
-    //add_action('wp_print_scripts', 'fb_urls_of_enqueued_stuff');
-    public function fb_urls_of_enqueued_stuff($handles = array())
+    public function admin_scripts()
     {
-        // Print Styles
-        global $wp_scripts, $wp_styles;
-        $sl = 0;
-        foreach ($wp_styles->queue as $handle) {
-            if (isset($wp_styles->registered[$handle])) {
-                //echo $sl++ . ". " . $handle . ": " . $wp_styles->registered[$handle]->src . "<br>";
-            }
-
-        }
-        echo '<hr>';
-
-
-        // Array of css files
-        $cssList = array();
-
-        $mergeCSS = "";
-// Loop the css Array
-        foreach ($wp_styles->queue as $handle) {
-            // Load the content of the css file
-            if (isset($wp_styles->registered[$handle])) {
-                //echo $sl++ . ". " . $handle . ": " . $wp_styles->registered[$handle]->src . "<br>";
-                $src = $wp_styles->registered[$handle]->src;
-                //echo $sl++ . ". $src<br>";
-
-                $explode = explode('/wp-content/', $src);
-                if (isset($explode[1])) {
-                    $cssList [] = $file = WP_CONTENT_DIR . '/' . $explode[1];
-                    if (file_exists($file)) {
-                        echo $sl++ . ". $file<br>";
-                        $mergeCSS .= file_get_contents($file);
-                    }
-                }
-
-
-            }
-
-        }
-
-//19545 1805kb
-        echo '<pre>', print_r($cssList), '</pre>';
-        //exit();
-// Remove comments also applicable in javascript
-        $mergeCSS = preg_replace('!/\*[^*]*\*+([^/][^*]*\*+)*/!', '', $mergeCSS);
-
-// Remove space after colons
-        $mergeCSS = str_replace(': ', ':', $mergeCSS);
-
-// Remove whitespace
-        $mergeCSS = str_replace(array("\n", "\t", '  ', '    ', '    '), '', $mergeCSS);
-
-//Generate Etag
-        $genEtag = md5_file($_SERVER['SCRIPT_FILENAME']);
-
-// call the browser that support gzip, deflate or none at all, if the browser doest      support compression this function will automatically return to FALSE
-//    ob_start('ob_gzhandler');
-//
-//// call the generated etag
-//    header("Etag: " . $genEtag);
-//
-//// Same as the cache-control and this is optional
-//    header("Pragma: public");
-//
-//// Enable caching
-//    header("Cache-Control: public ");
-//
-//// Expire in one day
-//    header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 86400) . ' GMT');
-//
-//// Set the correct MIME type, because Apache won't set it for us
-//    header("Content-type: text/javascript");
-//
-//// Set accept-encoding
-//    header('Vary: Accept-Encoding');
-
-// Write everything out
-        $frontEnd = WP_PLUGIN_DIR . '/' . WPBOOSTER_NAME . '/css/front-end.css';
-        echo $frontEnd . "<br>";
-        //file_put_contents($frontEnd, $mergeCSS);
-        if (file_exists($frontEnd)) {
-            echo "exists: " . $frontEnd;
-            file_put_contents($frontEnd, $mergeCSS);
-        }
-        echo($mergeCSS);
-        die;
-
+        $file = WPBOOSTER_NAME.'-admin';
+        wp_enqueue_style($file, WPBOOSTER_STYLES . "/$file.css");
+        wp_enqueue_script($file, WPBOOSTER_SCRIPTS . "/$file.js", array('jquery'));
     }
 
 

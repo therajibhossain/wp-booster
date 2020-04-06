@@ -49,7 +49,6 @@ class WPBoosterSetting
      */
     public function create_admin_page()
     {
-        wp_enqueue_style($css = 'wp-booster-admin', WPBOOSTER_URL . "css/$css.css");
         // Set class property
         foreach (config::option_name() as $item) {
             $this->options[$item] = get_option($item);
@@ -91,7 +90,6 @@ class WPBoosterSetting
             </div>
             <?php echo $tab_contents ?>
         </div>
-
         <?php
     }
 
@@ -186,9 +184,8 @@ class WPBoosterSetting
     /*updating all admin settings*/
     public function wpb_update_setting()
     {
-        config::boot_settings(config::option_name()[1]);
+        require_once WPBOOSTER_DIR . '/inc/external/JSMin.php';
         die;
-
 
         $return = ['response' => 0, 'message' => 'noting changed!'];
         $form_data = array();
