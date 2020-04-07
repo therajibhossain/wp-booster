@@ -20,9 +20,6 @@ class WPBooster
      */
     public function __construct($version, $filepath)
     {
-        //add_action('wp_print_scripts', array($this, 'fb_urls_of_enqueued_stuff'));
-        //die;
-
         $this->version = $version;
         $this->filepath = $filepath;
 

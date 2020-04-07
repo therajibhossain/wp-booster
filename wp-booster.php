@@ -16,8 +16,6 @@
 
 if (!defined('ABSPATH')) die('Direct access not allowed');
 define('WPBOOSTER_DIR', plugin_dir_path(__FILE__));
-define('WPBOOSTER_DIR2', plugin_dir_path('wp-booster'));
-echo plugin_dir_path('wp-booster');die;
 require_once WPBOOSTER_DIR . '/inc/autoload.php';
 
 /*plugin environment variables*/
@@ -51,6 +49,12 @@ if (is_admin()) {
 } else {
     wpBoosterFront();
 }
+
+
+
+add_action('get_header', function (){
+   // echo '<pre>', print_r(wp_styles()), '</pre>'; exit();
+});
 
 /*checking the version*/
 //if (PHP_VERSION < '7.0') {

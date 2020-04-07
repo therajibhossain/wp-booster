@@ -184,8 +184,9 @@ class WPBoosterSetting
     /*updating all admin settings*/
     public function wpb_update_setting()
     {
-        require_once WPBOOSTER_DIR . '/inc/external/JSMin.php';
-        die;
+        $a = get_option('wpbooster_src_combine_js');
+        //echo '<pre>', print_r($a), '</pre>'; exit();
+
 
         $return = ['response' => 0, 'message' => 'noting changed!'];
         $form_data = array();

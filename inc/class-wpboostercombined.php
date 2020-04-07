@@ -52,75 +52,34 @@ class WPBoosterCombined
                     $head = $explode[0];
                 }
 
-//                if ($head) {
-//                    $dom = new DOMDocument;
-//                    $dom->loadHTML(mb_convert_encoding($head, 'HTML-ENTITIES', 'UTF-8'));
+                if ($head) {
+                    $dom = new DOMDocument;
+                    $dom->loadHTML(mb_convert_encoding($head, 'HTML-ENTITIES', 'UTF-8'));
 //                    if ($combine_css) {
 //                        $this->merge_content($dom, 'link', $combine_css);
 //                    }
 //                    if ($combine_js) {
 //                        $this->merge_content($dom, 'script', $combine_js);
 //                    }
-//                }
+                }
 
                 if ($combine_css) {
-                    $this->merge_content('link', $combine_css);
+                    $this->merge_content('link', $combine_css, $dom);
                 }
                 if ($combine_js) {
-                    $this->merge_content('script', $combine_js);
+                    $this->merge_content('script', $combine_js, $dom);
                 }
             }
         }
     }
 
-    private
-    function merge_content($tag, $option_name)
+    private function merge_content($tag, $option_name, $dom)
     {
         $enqueued_src = get_option($tag == 'link' ? "wpbooster_enqueued_styles" : 'wpbooster_enqueued_scripts');
         $combine_option = "wpbooster_src_$option_name";
-        $combine_src = get_option($combine_option);
 
-        $combine_src_new = array();
-        $merge_content = '';
-        $new_line = "\n";
-        if ($enqueued_src) {
-            foreach ($enqueued_src as $handle => $href) {
-                $merged = $this->get_content($href);
-                if ($merged) {
-                    $merge_content .= $merged;
-                    $combine_src_new[$handle] = $href;
-                }
-            }
-
-            echo $merge_content;die;
-
-
-            $ext = ($tag === 'link') ? 'css' : 'js';
-            $dest_src = WP_PLUGIN_DIR . '/' . WPBOOSTER_NAME . '/' . $ext . '/' . WPBOOSTER_NAME . '.' . $ext;
-            if (file_exists($dest_src) && $merge_content) {
-                $merge_content = preg_replace('!/\*[^*]*\*+([^/][^*]*\*+)*/!', '', $merge_content);
-                $merge_content = str_replace(': ', ':', $merge_content);
-                $merge_content = str_replace(array("\n", "\t", '  ', '    ', '    '), '', $merge_content);
-
-                $comment = $new_line . config::get_comment('/*', '*/', "wp-booster-combined-sources: "
-                        . implode(', ', $combine_src_new), 0) . $new_line . config::get_comment();
-                $merged = file_put_contents($dest_src, $merge_content . $comment);
-            }
-        }
-
-        if ($combine_src_new && isset($merged)) {
-            update_option($combine_option, $combine_src_new);
-            return true;
-        }
-        return false;
-        /*custom new*/
-
-
-        /*main function previous*/
-        $tag_src = array();
-        $merge_content = '';
-        $new_line = "\n";
         $nodes = $dom->getElementsByTagName($tag);
+        $tag_src_html = array();
         if ($nodes) {
             foreach ($nodes as $node) {
                 if ($tag === 'link') {
@@ -131,33 +90,67 @@ class WPBoosterCombined
 
                 if (isset($get_attr)) {
                     $href = $node->getAttribute($get_attr);
-                    $merged = $this->get_content($href);
+                    $tag_src_html[] = $href;
+                }
+            }
+        }
+
+        $combine_src_new = array();
+        $merge_content = '';
+        $sl = 1;
+        if ($enqueued_src) {
+            foreach ($enqueued_src as $handle => $href) {
+                $combine_src_new[$handle] = $href;
+            }
+
+            foreach ($tag_src_html as $k => $item) {
+                unset($tag_src_html[$k]);
+                if (in_array($item, $combine_src_new)) {
+                    $merged = $this->get_content($item);
                     if ($merged) {
-                        $merge_content .= $merged;
-                        $tag_src[] = $href;
+                        $comment = "/*!$sl. $href*/";
+                        $merge_content .= $comment . $merged;
+                        $combine_src_new[$handle] = $href;
+                        $sl++;
+                        $tag_src_html[array_search($item, $combine_src_new)] = $item;
                     }
                 }
             }
 
             $ext = ($tag === 'link') ? 'css' : 'js';
-            $dest_src = WP_PLUGIN_DIR . '/' . WPBOOSTER_NAME . '/' . $ext . '/wp-booster.' . $ext;
+            $dest_src = WP_PLUGIN_DIR . '/' . WPBOOSTER_NAME . '/' . $ext . '/' . WPBOOSTER_NAME . '.' . $ext;
             if (file_exists($dest_src) && $merge_content) {
-                $merge_content = preg_replace('!/\*[^*]*\*+([^/][^*]*\*+)*/!', '', $merge_content);
-                $merge_content = str_replace(': ', ':', $merge_content);
-                $merge_content = str_replace(array("\n", "\t", '  ', '    ', '    '), '', $merge_content);
-
-                $comment = $new_line . config::get_comment('/*', '*/', "wp-booster-combined-sources: "
-                        . implode(', ', $tag_src), 0) . $new_line . config::get_comment();
-                $merged = file_put_contents($dest_src, $merge_content . $comment);
+                $merge_content = $this->minify($merge_content, $ext, $tag_src_html);
+                $merged = file_put_contents($dest_src, $merge_content);
             }
         }
 
-        if ($tag_src && isset($merged)) {
-            update_option('wpbooster_src_' . $option_name, $tag_src);
+        if ($tag_src_html && isset($merged)) {
+            update_option($combine_option, $tag_src_html);
             return true;
         }
         return false;
-        /*end main function previous*/
+    }
+
+    private function minify($input, $ext, $combine_src_new)
+    {
+        $new_line = "\n";
+        $minify_dir = WPBOOSTER_DIR . "/minify/$ext/";
+        if ($ext === 'js') {
+            require_once $minify_dir . "JSMin.php";
+            $output = \JSMin\JSMin::minify($input);
+        } else {
+            require_once $minify_dir . "Minifier.php";
+            $compressor = new \tubalmartin\CssMin\Minifier;
+            $output = $compressor->run($input);
+        }
+        if ($output) {
+            $str = "wp-booster-combined-sources: " . implode(', ', $combine_src_new) . $new_line . "(total-files: " . count($combine_src_new) . ")";
+            $comment = $new_line . config::get_comment('/*', '*/', $str, 0) . $new_line . config::get_comment();
+            return $output . $comment;
+        }
+
+        return false;
     }
 
     private function get_content($src)

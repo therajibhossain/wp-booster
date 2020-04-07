@@ -71,14 +71,16 @@ class WPBoosterFrontend
         $combine_src = get_option("wpbooster_src_$combine");
         if ($combine_src) {
             $file = WPBOOSTER_NAME;
-            foreach ($combine_src as $handle => $item) {
-                ($type === 'css') ? wp_dequeue_style($handle) : wp_dequeue_script($handle);
-            }
             if ($type === 'css') {
                 wp_enqueue_style($file, WPBOOSTER_STYLES . "$file.css", array(), '', 'all');
             } else {
                 wp_enqueue_script($file, WPBOOSTER_SCRIPTS . "$file.js", array());
             }
+
+            foreach ($combine_src as $handle => $item) {
+                ($type === 'css') ? wp_dequeue_style($handle) : wp_dequeue_script($handle);
+            }
+
         }
     }
 
