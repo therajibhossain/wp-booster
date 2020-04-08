@@ -1,5 +1,7 @@
 <?php
 
+use WPBoosterConfig as config;
+
 class WPBoosterCompression
 {
     private $_options, $_status;
@@ -23,13 +25,13 @@ class WPBoosterCompression
         $src = ABSPATH . $htaccess;
 
         if (!is_writable($src)) {
-            echo '.htaccess file not writable';
+            config::log('.htaccess file not writable');
             return false;
         }
 
         if ($gzip_compress || $browser_cache) {
             if (file_exists($src)) {
-                $dest = WPB_DIR . 'backup/' . $htaccess;
+                $dest = WPBOOSTER_DIR . 'backup/' . $htaccess;
                 if (!file_exists($dest)) {
                     copy($src, $dest);
                 }
@@ -37,10 +39,8 @@ class WPBoosterCompression
         }
 
         $new_content = (file_get_contents($src));
-
         $new_content .= $this->new_content('WP-Booster-Gzip', $new_content, 'gzip', $gzip_compress);
         $new_content .= $this->new_content('WP-Booster-Browser-Cache', $new_content, 'cache', $browser_cache);
-
         file_put_contents($src, $new_content);
         return true;
     }

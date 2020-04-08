@@ -33,7 +33,7 @@ class WPBooster
 
     public function admin_scripts()
     {
-        $file = WPBOOSTER_NAME.'-admin';
+        $file = WPBOOSTER_NAME . '-admin';
         wp_enqueue_style($file, WPBOOSTER_STYLES . "/$file.css");
         wp_enqueue_script($file, WPBOOSTER_SCRIPTS . "/$file.js", array('jquery'));
     }
@@ -55,6 +55,18 @@ class WPBooster
     public static function plugin_uninstall()
     {
         foreach (config::option_name() as $item) {
+            if (get_option($item) != false) {
+                delete_option($item);
+            }
+        }
+        $prefix = 'wpbooster';
+        $other_options = array(
+            $prefix . "_enqueued_scripts",
+            $prefix . "_enqueued_styles",
+            $prefix . "_src_combine_js",
+            $prefix . "_src_combine_css",
+        );
+        foreach ($other_options as $item) {
             if (get_option($item) != false) {
                 delete_option($item);
             }

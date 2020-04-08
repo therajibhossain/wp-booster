@@ -5,29 +5,17 @@ use WPBoosterConfig as config;
 class WPBoosterCombined
 {
     private $_options, $_status;
-    private static $option_name;
+    private static $option_name, $_html = null;
 
     public function __construct($option_name, $status = 'active')
     {
         $this->_options = get_option(self::$option_name = $option_name);
         $this->_status = $status;
-        $this->combine();
-    }
-
-    private function enqueued_handles($queue)
-    {
-        $handles = array();
-        foreach ($queue->queue as $handle) {
-            if (isset($queue->registered[$handle])) {
-                $src = $queue->registered[$handle]->src;
-                $handles[$handle] = $src;
-                $explode = explode(home_url(), $src);
-                if (isset($explode[1])) {
-                    //$handles[$handle] = $src;
-                }
-            }
+        try {
+            $this->combine();
+        } catch (Exception $e) {
+            config::log(__METHOD__ . $e->getMessage());
         }
-        return $handles;
     }
 
     private function combine()
@@ -42,8 +30,13 @@ class WPBoosterCombined
         }
 
         if ($combine_css || $combine_js) {
-            $html = config::homeHtml();
-            //$html = wp_remote_retrieve_body(wp_remote_get((home_url())));
+            $combine_option = $combine_css ? $combine_css : $combine_js;
+            $sec = $_POST['wpb_section'];
+            $sec_val = get_option($sec);
+            update_option($sec, '');
+
+            //$html = config::homeHtml();
+            $html = wp_remote_retrieve_body(wp_remote_get((home_url())));
             if ($html) {
                 $head = '';
                 $explode = explode('<head>', $html);
@@ -55,19 +48,16 @@ class WPBoosterCombined
                 if ($head) {
                     $dom = new DOMDocument;
                     $dom->loadHTML(mb_convert_encoding($head, 'HTML-ENTITIES', 'UTF-8'));
-//                    if ($combine_css) {
-//                        $this->merge_content($dom, 'link', $combine_css);
-//                    }
-//                    if ($combine_js) {
-//                        $this->merge_content($dom, 'script', $combine_js);
-//                    }
-                }
+                    if ($combine_css) {
+                        $this->merge_content('link', $combine_css, $dom);
+                    }
+                    if ($combine_js) {
+                        $this->merge_content('script', $combine_js, $dom);
+                    }
 
-                if ($combine_css) {
-                    $this->merge_content('link', $combine_css, $dom);
-                }
-                if ($combine_js) {
-                    $this->merge_content('script', $combine_js, $dom);
+                    update_option($sec, $sec_val);
+                } else {
+                    config::log(__METHOD__ . __LINE__);
                 }
             }
         }
@@ -93,6 +83,8 @@ class WPBoosterCombined
                     $tag_src_html[] = $href;
                 }
             }
+        } else {
+            config::log(__METHOD__ . __LINE__);
         }
 
         $combine_src_new = array();
@@ -105,12 +97,12 @@ class WPBoosterCombined
 
             foreach ($tag_src_html as $k => $item) {
                 unset($tag_src_html[$k]);
+                $item = explode('?', $item)[0];
                 if (in_array($item, $combine_src_new)) {
                     $merged = $this->get_content($item);
                     if ($merged) {
-                        $comment = "/*!$sl. $href*/";
+                        $comment = "/*!$sl. $item*/";
                         $merge_content .= $comment . $merged;
-                        $combine_src_new[$handle] = $href;
                         $sl++;
                         $tag_src_html[array_search($item, $combine_src_new)] = $item;
                     }
@@ -122,6 +114,8 @@ class WPBoosterCombined
             if (file_exists($dest_src) && $merge_content) {
                 $merge_content = $this->minify($merge_content, $ext, $tag_src_html);
                 $merged = file_put_contents($dest_src, $merge_content);
+            } else {
+                config::log(__METHOD__ . __LINE__);
             }
         }
 
@@ -129,6 +123,7 @@ class WPBoosterCombined
             update_option($combine_option, $tag_src_html);
             return true;
         }
+        config::log(__METHOD__);
         return false;
     }
 
@@ -150,6 +145,7 @@ class WPBoosterCombined
             return $output . $comment;
         }
 
+        config::log(__METHOD__);
         return false;
     }
 
@@ -159,6 +155,7 @@ class WPBoosterCombined
         if (isset($explode[1]) && (strpos($explode[1], '.php') === false)) {
             return file_get_contents($src);
         }
+        config::log(__METHOD__);
         return false;
     }
 }

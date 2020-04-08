@@ -1701,4 +1701,14 @@ var mc4wp_forms_config = [];
     {
         return self::option_tabs()[self::option_name()[1]]['fields'][$type == 'css' ? 0 : 1]['name'];
     }
+
+    public static function log($message, $type = 'error')
+    {
+        if (is_array($message)) {
+            $message = json_encode($message);
+        }
+        $file = fopen(WPBOOSTER_LOGS . WPBOOSTER_NAME . '.log', "a");
+        echo fwrite($file, "[" . date('d-M-y h:i:s') . "] $type :: " . $message . "\n");
+        fclose($file);
+    }
 }

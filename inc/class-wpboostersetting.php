@@ -24,7 +24,28 @@ class WPBoosterSetting
         add_action('admin_menu', array($this, 'wpb_admin_menu'));
         add_action('admin_init', array($this, 'wpb_page_init'));
         add_action('wp_ajax_wpb_update_setting', array($this, 'wpb_update_setting'));
+        add_filter('plugin_action_links_' . WPBOOSTER_FILE, array($this, 'settings_link'));
     }
+
+    /*link to plugin list*/
+    public function settings_link($links)
+    {
+        // Build and escape the URL.
+        $url = esc_url(add_query_arg(
+            'page',
+            'wp-booster',
+            get_admin_url() . 'admin.php'
+        ));
+        // Create the link.
+        $settings_link = "<a href='$url'>" . __('Settings') . '</a>';
+        // Adds the link to the end of the array.
+        array_push(
+            $links,
+            $settings_link
+        );
+        return $links;
+    }
+
 
     /**
      * Add options page
@@ -181,28 +202,29 @@ class WPBoosterSetting
         }
     }
 
+
     /*updating all admin settings*/
     public function wpb_update_setting()
     {
-        $a = get_option('wpbooster_src_combine_js');
-        //echo '<pre>', print_r($a), '</pre>'; exit();
+        try {
+            $return = ['response' => 0, 'message' => 'noting changed!'];
+            $form_data = array();
+            parse_str($_POST['formData'], $form_data);
 
+            /*validating CSRF*/
+            $token = $form_data['_token'];
+            if (!isset($token) || !wp_verify_nonce($token, 'wpb_nonce')) wp_die("<br><br>YOU ARE NOT ALLOWED! ");
+            $option_name = $_POST['wpb_section'];
 
-        $return = ['response' => 0, 'message' => 'noting changed!'];
-        $form_data = array();
-        parse_str($_POST['formData'], $form_data);
+            if (update_option($option_name, isset($form_data[$option_name]) ? $form_data[$option_name] : '')) {
+                config::boot_settings($option_name);
+                $return = ['response' => 1, 'message' => $option_name . '--- settings updated! To view update, refresh your site'];
+            }
 
-        /*validating CSRF*/
-        $token = $form_data['_token'];
-        if (!isset($token) || !wp_verify_nonce($token, 'wpb_nonce')) wp_die("<br><br>YOU ARE NOT ALLOWED! ");
-        $option_name = $_POST['wpb_section'];
-
-        if (update_option($option_name, isset($form_data[$option_name]) ? $form_data[$option_name] : '')) {
-            config::boot_settings($option_name);
-            $return = ['response' => 1, 'message' => $option_name . '--- settings updated! To view update, refresh your site'];
+            echo json_encode($return);
+            wp_die();
+        } catch (Exception $e) {
+            config::log(__METHOD__ . $e->getMessage());
         }
-
-        echo json_encode($return);
-        wp_die();
     }
 }

@@ -21,10 +21,12 @@ require_once WPBOOSTER_DIR . '/inc/autoload.php';
 /*plugin environment variables*/
 define('WPBOOSTER_VERSION', '1.0.0');
 define('WPBOOSTER_NAME', 'wp-booster');
-define('WPBOOSTER_FILE', __FILE__);
+define('WPBOOSTER_FILE', plugin_basename( __FILE__ ));
 define('WPBOOSTER_URL', plugins_url('wp-booster/'));
 define('WPBOOSTER_STYLES', WPBOOSTER_URL . 'css/');
 define('WPBOOSTER_SCRIPTS', WPBOOSTER_URL . 'js/');
+define('WPBOOSTER_LOGS', WPBOOSTER_DIR .'logs/');
+
 
 function wpBooster()
 {
@@ -52,9 +54,7 @@ if (is_admin()) {
 
 
 
-add_action('get_header', function (){
-   // echo '<pre>', print_r(wp_styles()), '</pre>'; exit();
-});
+
 
 /*checking the version*/
 //if (PHP_VERSION < '7.0') {
