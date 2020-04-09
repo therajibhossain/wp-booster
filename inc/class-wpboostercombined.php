@@ -1,11 +1,11 @@
 <?php
 
-use WPBoosterConfig as config;
+use WPBoosterConfig as conf;
 
 class WPBoosterCombined
 {
     private $_options, $_status;
-    private static $option_name, $_html = null;
+    private static $option_name;
 
     public function __construct($option_name, $status = 'active')
     {
@@ -14,14 +14,14 @@ class WPBoosterCombined
         try {
             $this->combine();
         } catch (Exception $e) {
-            config::log(__METHOD__ . $e->getMessage());
+            conf::log(__METHOD__ . $e->getMessage());
         }
     }
 
     private function combine()
     {
-        $css_field = config::combined_option();
-        $js_field = config::combined_option('js');
+        $css_field = conf::combined_option();
+        $js_field = conf::combined_option('js');
         $combine_css = (isset($this->_options[$css_field])) ? $css_field : false;
         $combine_js = (isset($this->_options[$js_field])) ? $js_field : false;
 
@@ -35,7 +35,6 @@ class WPBoosterCombined
             $sec_val = get_option($sec);
             update_option($sec, '');
 
-            //$html = config::homeHtml();
             $html = wp_remote_retrieve_body(wp_remote_get((home_url())));
             if ($html) {
                 $head = '';
@@ -57,8 +56,10 @@ class WPBoosterCombined
 
                     update_option($sec, $sec_val);
                 } else {
-                    config::log(__METHOD__ . __LINE__);
+                    conf::log(__METHOD__ . __LINE__ . " HTML head is missing");
                 }
+            } else {
+                conf::log(__METHOD__ . __LINE__ . " HTML missing");
             }
         }
     }
@@ -84,7 +85,7 @@ class WPBoosterCombined
                 }
             }
         } else {
-            config::log(__METHOD__ . __LINE__);
+            conf::log(__METHOD__ . __LINE__ . " html node is missing ($tag)");
         }
 
         $combine_src_new = array();
@@ -115,7 +116,7 @@ class WPBoosterCombined
                 $merge_content = $this->minify($merge_content, $ext, $tag_src_html);
                 $merged = file_put_contents($dest_src, $merge_content);
             } else {
-                config::log(__METHOD__ . __LINE__);
+                conf::log(__METHOD__ . __LINE__ . " ($dest_src || merge_content)");
             }
         }
 
@@ -123,7 +124,7 @@ class WPBoosterCombined
             update_option($combine_option, $tag_src_html);
             return true;
         }
-        config::log(__METHOD__);
+        conf::log(__METHOD__);
         return false;
     }
 
@@ -140,12 +141,12 @@ class WPBoosterCombined
             $output = $compressor->run($input);
         }
         if ($output) {
-            $str = "wp-booster-combined-sources: " . implode(', ', $combine_src_new) . $new_line . "(total-files: " . count($combine_src_new) . ")";
-            $comment = $new_line . config::get_comment('/*', '*/', $str, 0) . $new_line . config::get_comment();
+            $str = "(total-files: " . count($combine_src_new) . ") ";
+            return $output .= $new_line . conf::get_comment('/*', '*/', $str, 0) . conf::get_comment();
             return $output . $comment;
         }
 
-        config::log(__METHOD__);
+        conf::log(__METHOD__ . " minify problem ($ext)");
         return false;
     }
 
@@ -155,7 +156,7 @@ class WPBoosterCombined
         if (isset($explode[1]) && (strpos($explode[1], '.php') === false)) {
             return file_get_contents($src);
         }
-        config::log(__METHOD__);
+        conf::log(__METHOD__ . " ($src)");
         return false;
     }
 }

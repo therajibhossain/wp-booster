@@ -45,6 +45,4 @@ menuItem.style.transform='translate('+finalPosition.x+'px, '+finalPosition.y+'px
 function twentytwentyFindParents(target,query){var parents=[];function traverse(item){var parent=item.parentNode;if(parent instanceof HTMLElement){if(parent.matches(query)){parents.push(parent);}
 traverse(parent);}}
 traverse(target);return parents;}
-/* wp-booster-combined-sources: http://localhost/wpme/wp-content/themes/twentytwenty/assets/js/index.js
-(total-files: 1)  */
-/* wp-booster | last-modified:  April 08, 2020 03:29:05PM */
+/* (total-files: 1)   *//* wp-booster | last-modified:  April 09, 2020 03:38:34PM */

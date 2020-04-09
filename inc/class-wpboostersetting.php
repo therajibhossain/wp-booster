@@ -1,6 +1,6 @@
 <?php
 
-use WPBoosterConfig as config;
+use WPBoosterConfig as conf;
 
 class WPBoosterSetting
 {
@@ -33,7 +33,7 @@ class WPBoosterSetting
         // Build and escape the URL.
         $url = esc_url(add_query_arg(
             'page',
-            'wp-booster',
+            WPBOOSTER_NAME,
             get_admin_url() . 'admin.php'
         ));
         // Create the link.
@@ -53,7 +53,7 @@ class WPBoosterSetting
     public function wpb_admin_menu()
     {
         if (!self::$_menu_tabs) {
-            self::$_menu_tabs = config::option_tabs();
+            self::$_menu_tabs = conf::option_tabs();
         }
         // This page will be under "Settings"
         add_options_page(
@@ -71,7 +71,7 @@ class WPBoosterSetting
     public function create_admin_page()
     {
         // Set class property
-        foreach (config::option_name() as $item) {
+        foreach (conf::option_name() as $item) {
             $this->options[$item] = get_option($item);
         }
 
@@ -202,29 +202,23 @@ class WPBoosterSetting
         }
     }
 
-
     /*updating all admin settings*/
     public function wpb_update_setting()
     {
-        try {
-            $return = ['response' => 0, 'message' => 'noting changed!'];
-            $form_data = array();
-            parse_str($_POST['formData'], $form_data);
+        $return = ['response' => 0, 'message' => 'noting changed!'];
+        $form_data = array();
+        parse_str($_POST['formData'], $form_data);
 
-            /*validating CSRF*/
-            $token = $form_data['_token'];
-            if (!isset($token) || !wp_verify_nonce($token, 'wpb_nonce')) wp_die("<br><br>YOU ARE NOT ALLOWED! ");
-            $option_name = $_POST['wpb_section'];
+        /*validating CSRF*/
+        $token = $form_data['_token'];
+        if (!isset($token) || !wp_verify_nonce($token, 'wpb_nonce')) wp_die("<br><br>YOU ARE NOT ALLOWED! ");
+        $option_name = $_POST['wpb_section'];
 
-            if (update_option($option_name, isset($form_data[$option_name]) ? $form_data[$option_name] : '')) {
-                config::boot_settings($option_name);
-                $return = ['response' => 1, 'message' => $option_name . '--- settings updated! To view update, refresh your site'];
-            }
-
-            echo json_encode($return);
-            wp_die();
-        } catch (Exception $e) {
-            config::log(__METHOD__ . $e->getMessage());
+        if (update_option($option_name, isset($form_data[$option_name]) ? $form_data[$option_name] : '')) {
+            conf::boot_settings($option_name);
+            $return = ['response' => 1, 'message' => $option_name . '--- settings updated! To view update, refresh your site'];
         }
+        echo json_encode($return);
+        wp_die();
     }
 }

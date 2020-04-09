@@ -1,6 +1,6 @@
 <?php
 
-use WPBoosterConfig as config;
+use WPBoosterConfig as conf;
 
 class WPBoosterFrontend
 {
@@ -8,20 +8,65 @@ class WPBoosterFrontend
 
     public function __construct()
     {
-        $this->_options = config::option_value();
+        $this->_options = conf::option_value();
         $this->init_actions();
     }
 
     private function init_actions()
     {
+        /*combining styles & scripts*/
         add_action("wp_head", array($this, 'wp_head'), 1);
+
+        /*removing query string param from styles scripts*/
+        add_filter('script_loader_src', array($this, 'remove_script_version'));
+        add_filter('style_loader_src', array($this, 'remove_script_version'));
+
+        /*lazy loading*/
+        $this->lazy_load();
+    }
+
+    private function lazy_load()
+    {
+        /*if lazy load is enabled*/
+        if (isset($this->_options[conf::option_name()[2]][conf::lazy_load_option()])) {
+            add_action('wp_enqueue_scripts', function () {
+                wp_enqueue_script('jquery_lazy_load', WPBOOSTER_SCRIPTS . 'jquery.lazyload.min.js', array('jquery'));
+            });
+            /*calling lazy oad*/
+            add_action('wp_footer', function () {
+                echo '<script type="text/javascript">
+                    (function($){
+                      $("img.lazy").lazyload();
+                    })(jQuery);
+                </script>';
+            });
+
+            /*fileter_lazyload*/
+            add_filter('the_content', function ($content) {
+                return preg_replace_callback('/(<\s*img[^>]+)(src\s*=\s*"[^"]+")([^>]+>)/i', array($this, 'preg_lazyload'), $content);
+            });
+        }
+    }
+
+    public function preg_lazyload($img_match)
+    {
+        $img_replace = $img_match[1] . 'src="' . WPBOOSTER_URL . 'img/grey.gif" data-original' . substr($img_match[2], 3) . $img_match[3];
+        $img_replace = preg_replace('/class\s*=\s*"/i', 'class="lazy ', $img_replace);
+        $img_replace .= '<noscript>' . $img_match[0] . '</noscript>';
+        return $img_replace;
+    }
+
+    /*removing query string param from styles scripts*/
+    function remove_script_version($src)
+    {
+        return remove_query_arg('ver', $src);
     }
 
     public function wp_head()
     {
-        $combined = config::option_name()[1];
-        $combine_css = config::combined_option('css');
-        $combine_js = config::combined_option('js');
+        $combined = conf::option_name()[1];
+        $combine_css = conf::combined_option('css');
+        $combine_js = conf::combined_option('js');
         $combine_css = (isset($this->_options[$combined][$combine_css])) ? $combine_css : false;
         $combine_js = (isset($this->_options[$combined][$combine_js])) ? $combine_js : false;
 
@@ -80,7 +125,6 @@ class WPBoosterFrontend
             foreach ($combine_src as $handle => $item) {
                 ($type === 'css') ? wp_dequeue_style($handle) : wp_dequeue_script($handle);
             }
-
         }
     }
 

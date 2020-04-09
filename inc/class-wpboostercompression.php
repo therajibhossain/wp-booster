@@ -1,6 +1,6 @@
 <?php
 
-use WPBoosterConfig as config;
+use WPBoosterConfig as conf;
 
 class WPBoosterCompression
 {
@@ -25,7 +25,7 @@ class WPBoosterCompression
         $src = ABSPATH . $htaccess;
 
         if (!is_writable($src)) {
-            config::log('.htaccess file not writable');
+            conf::log('.htaccess file not writable');
             return false;
         }
 
@@ -35,31 +35,40 @@ class WPBoosterCompression
                 if (!file_exists($dest)) {
                     copy($src, $dest);
                 }
+            }else{
+                conf::log($src." not exists");
             }
         }
 
-        $new_content = (file_get_contents($src));
-        $new_content .= $this->new_content('WP-Booster-Gzip', $new_content, 'gzip', $gzip_compress);
-        $new_content .= $this->new_content('WP-Booster-Browser-Cache', $new_content, 'cache', $browser_cache);
-        file_put_contents($src, $new_content);
+        $new_content = $this->new_content('WP-Booster-Gzip', (file_get_contents($src)), 'gzip', $gzip_compress);
+        $new_content = $this->new_content('WP-Booster-Browser-Cache', $new_content, 'cache', $browser_cache);
+
+        if (!file_put_contents($src, $new_content)) {
+            conf::log(__METHOD__ . __LINE__);
+            return false;
+        }
+        return false;
         return true;
     }
 
-    private function new_content($wpb_prefix, &$new_content, $type, $enable)
+    private function new_content($wpb_prefix, $old_content, $type, $enable)
     {
-        $begin = explode("# BEGIN $wpb_prefix", $new_content);
+        $begin = explode("# BEGIN $wpb_prefix", $old_content);
         if (isset($begin[0])) {
-            $new_content = $begin[0];
+            $old_content = $begin[0];
         }
 
         if (isset($begin[1])) {
             $end = explode("# END $wpb_prefix", $begin[1]);
-            $new_content .= isset($end[1]) ? $end[1] : $end[0];
+            $old_content .= isset($end[1]) ? $end[1] : $end[0];
         }
-        $new_content = trim($new_content);
+        $old_content = trim($old_content);
+
         if ($enable) {
-            $new_content .= ($type == 'gzip') ? $this->gzip_content($wpb_prefix) : $this->browser_cache_content($wpb_prefix);
+            $old_content .= ($type == 'gzip') ? $this->gzip_content($wpb_prefix) : $this->browser_cache_content($wpb_prefix);
         }
+
+        return $old_content;
     }
 
     private function gzip_content($wpb_gzip)

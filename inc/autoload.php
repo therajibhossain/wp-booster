@@ -7,7 +7,7 @@
 spl_autoload_register('wpb_autoload');
 function wpb_autoload($class_name)
 {
-    require_once 'wpboosterconfigtrait.php';
+    require_once 'wpboosterconfig.php';
     if (false !== strpos($class_name, 'WPBooster')) {
         $dirSep = DIRECTORY_SEPARATOR;
         $parts = explode('\\', $class_name);
