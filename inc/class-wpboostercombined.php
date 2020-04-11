@@ -115,8 +115,6 @@ class WPBoosterCombined
             if (file_exists($dest_src) && $merge_content) {
                 $merge_content = $this->minify($merge_content, $ext, $tag_src_html);
                 $merged = file_put_contents($dest_src, $merge_content);
-            } else {
-                conf::log(__METHOD__ . __LINE__ . " ($dest_src || merge_content)");
             }
         }
 
@@ -124,7 +122,7 @@ class WPBoosterCombined
             update_option($combine_option, $tag_src_html);
             return true;
         }
-        conf::log(__METHOD__);
+        conf::log(__METHOD__ . " empty content", 'warning');
         return false;
     }
 
@@ -143,20 +141,22 @@ class WPBoosterCombined
         if ($output) {
             $str = "(total-files: " . count($combine_src_new) . ") ";
             return $output .= $new_line . conf::get_comment('/*', '*/', $str, 0) . conf::get_comment();
-            return $output . $comment;
         }
 
         conf::log(__METHOD__ . " minify problem ($ext)");
         return false;
     }
 
+    private function blacklist_file($src){
+
+    }
     private function get_content($src)
     {
         $explode = explode(home_url(), $src);
         if (isset($explode[1]) && (strpos($explode[1], '.php') === false)) {
             return file_get_contents($src);
         }
-        conf::log(__METHOD__ . " ($src)");
+        conf::log(__METHOD__ . " ($src) cannot be added", 'warning');
         return false;
     }
 }

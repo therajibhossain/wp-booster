@@ -52,65 +52,61 @@ if (is_admin()) {
     wpBoosterFront();
 }
 
+//add_action('wp_enqueue_scripts', function () {
+//    wp_enqueue_script('jquery_lazy_load', WPBOOSTER_SCRIPTS . 'jquery.lazyload.min.js', array('jquery'));
+//});
+/*calling lazy oad*/
+//add_action('wp_footer', function () {
+//    echo '<script type="text/javascript">
+//                    (function($){
+//                      $("img.lazyload").lazyload();
+//                    })(jQuery);
+//                </script>';
+//});
 
 
-/*checking the version*/
-//if (PHP_VERSION < '7.0') {
-//    function wpb_incompatible()
-//    {
-//        echo '<p class="danger error">' . PLUGIN . ' requires PHP 7.0 or higher, upgrade your version!</p>';
-//        if (isset($_GET['activate'])) {
-//            unset($_GET['activate']);
-//        }
-//        return;
-//    }
-//
-//    function wpb_deactivate_self()
-//    {
-//        deactivate_plugins(plugin_basename(WPB_PLUGIN_FILE));
-//        return;
-//    }
-//
-//    add_action('admin_notices', 'wpb_incompatible');
-//    add_action('admin_init', 'wpb_deactivate_self');
-//    return;
-//}
-//
-//function wpb_autoload($class)
-//{
-//    $php = '.php';
-//    $includes = dirname(__FILE__) . '/includes/';
-//    if (in_array($class, ['Minify_HTML', 'JSMin'])) {
-//        $file = str_replace('_', '-', strtolower($class));
-//        $path = dirname(__FILE__) . '/classes/external/php/';
-//        $filepath = $path . $file . $php;
-//    } elseif (false != strpos($class, $neelde = 'WPBooster\\tubalmartin\\CssMin')) {
-//        $file = str_replace($neelde, '', $class);
-//        $path = $includes . 'external/php/yui-php-cssmin-bundled/';
-//        $filepath = $path . $file . $php;
-//    } elseif ('wpb' === substr($class, 0, 3)) {
-//        $file = $class;
-//        $filepath = $includes . $file . $php;
-//    } elseif ('PAnd' === $class) {
-//        $file = 'persist-admin-notices-dismissal';
-//        $path = $includes . '/external/php/persist-admin-notices-dismissal/';
-//        $filepath = $path . $file . $php;
-//    }
-//
-//    if (!$filepath)
-//        return;
-//    require $filepath;
-//}
-//
-//spl_autoload_register('wpb_autoload');
-//
-//function wpb()
-//{
-//    static $wpb = false;
-//    if (!$wpb) {
-//        $wpb = new wpBooster(WPB_VERSION, WPB_PLUGIN_FILE);
-//    }
-//    return $wpb;
-//}
-//
-//wpb()->run();
+//add_filter('the_content', 'gs_add_img_lazy_markup', 15);  // hook into filter and use
+//priority 15 to make sure it is run after the srcset and sizes attributes have been added.
+
+function gs_add_img_lazy_markup($the_content)
+{
+
+    libxml_use_internal_errors(true);
+    $post = new DOMDocument();
+    $post->loadHTML($the_content);
+    $imgs = $post->getElementsByTagName('img');
+
+    $attr = 'data-original';
+    // Iterate each img tag
+    foreach ($imgs as $img) {
+
+        if ($img->hasAttribute($attr)) continue;
+
+        if ($img->parentNode->tagName == 'noscript') continue;
+
+        $clone = $img->cloneNode();
+
+        $src = $img->getAttribute('src');
+        if (false === filter_var($src, FILTER_VALIDATE_URL)) {
+            $src = $img->getAttribute('data-src');
+        }
+
+        $img->setAttribute('src', WPBOOSTER_URL . 'img/loader.gif');
+        $img->setAttribute($attr, $src);
+
+        $srcset = $img->getAttribute('srcset');
+        $img->removeAttribute('srcset');
+        if (!empty($srcset)) {
+            $img->setAttribute('data-srcset', $srcset);
+        }
+
+        $imgClass = $img->getAttribute('class');
+        $img->setAttribute('class', $imgClass . ' lazyload');
+
+        $no_script = $post->createElement('noscript');
+        $no_script->appendChild($clone);
+        $img->parentNode->insertBefore($no_script, $img);
+    }
+
+    return $post->saveHTML();
+}

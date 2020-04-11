@@ -36,21 +36,62 @@ class WPBoosterFrontend
             add_action('wp_footer', function () {
                 echo '<script type="text/javascript">
                     (function($){
-                      $("img.lazy").lazyload();
+                      $("img.wpb-lazy").lazyload();
                     })(jQuery);
                 </script>';
             });
 
             /*fileter_lazyload*/
             add_filter('the_content', function ($content) {
-                return preg_replace_callback('/(<\s*img[^>]+)(src\s*=\s*"[^"]+")([^>]+>)/i', array($this, 'preg_lazyload'), $content);
+                return $this->add_img_lazy_markup($content);
+//                return preg_replace_callback('/(<\s*img[^>]+)(src\s*=\s*"[^"]+")([^>]+>)/i', array($this, 'preg_lazyload'), $content);
             });
         }
     }
 
+    private function add_img_lazy_markup($the_content)
+    {
+        libxml_use_internal_errors(true);
+        $post = new DOMDocument();
+        $post->loadHTML($the_content);
+        $imgs = $post->getElementsByTagName('img');
+
+        $attr = 'data-original';
+        // Iterate each img tag
+        foreach ($imgs as $img) {
+            if ($img->hasAttribute($attr)) continue;
+
+            if ($img->parentNode->tagName == 'noscript') continue;
+
+            $clone = $img->cloneNode();
+
+            $src = $img->getAttribute('src');
+            if (false === filter_var($src, FILTER_VALIDATE_URL)) {
+                $src = $img->getAttribute('data-src');
+            }
+
+            $img->setAttribute('src', WPBOOSTER_URL . 'img/loader.gif');
+            $img->setAttribute($attr, $src);
+
+            $srcset = $img->getAttribute('srcset');
+            $img->removeAttribute('srcset');
+            if (!empty($srcset)) {
+                $img->setAttribute('data-srcset', $srcset);
+            }
+
+            $imgClass = $img->getAttribute('class');
+            $img->setAttribute('class', $imgClass . ' wpb-lazy');
+
+            $no_script = $post->createElement('noscript');
+            $no_script->appendChild($clone);
+            $img->parentNode->insertBefore($no_script, $img);
+        }
+        return $post->saveHTML();
+    }
+
     public function preg_lazyload($img_match)
     {
-        $img_replace = $img_match[1] . 'src="' . WPBOOSTER_URL . 'img/grey.gif" data-original' . substr($img_match[2], 3) . $img_match[3];
+        $img_replace = $img_match[1] . 'src="' . WPBOOSTER_URL . 'img/loader.gif" data-original' . substr($img_match[2], 3) . $img_match[3];
         $img_replace = preg_replace('/class\s*=\s*"/i', 'class="lazy ', $img_replace);
         $img_replace .= '<noscript>' . $img_match[0] . '</noscript>';
         return $img_replace;

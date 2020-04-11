@@ -205,6 +205,10 @@ class WPBoosterSetting
     /*updating all admin settings*/
     public function wpb_update_setting()
     {
+        //conf::log('text'); die;
+
+
+
         $return = ['response' => 0, 'message' => 'noting changed!'];
         $form_data = array();
         parse_str($_POST['formData'], $form_data);

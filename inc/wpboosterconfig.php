@@ -100,7 +100,7 @@ trait WPBoosterConfig
         if (is_array($message)) {
             $message = json_encode($message);
         }
-        $file = fopen(WPBOOSTER_LOGS . WPBOOSTER_NAME . '.log', "a");
+        $file = fopen(WPBOOSTER_LOGS . WPBOOSTER_NAME . '.txt', "a");
         echo fwrite($file, "[" . date('d-M-y h:i:s') . "] $type" . $message . "\n");
         fclose($file);
     }

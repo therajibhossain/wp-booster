@@ -1,0 +1,2 @@
+//wp-booster.log file not creating/ showing in the live server(kholahat.com)
+lazyload not working properly
