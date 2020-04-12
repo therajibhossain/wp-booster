@@ -36,7 +36,7 @@ class WPBoosterFrontend
             add_action('wp_footer', function () {
                 echo '<script type="text/javascript">
                     (function($){
-                      $("img.wpb-lazy").lazyload();
+                      $("img.lazy").lazyload();
                     })(jQuery);
                 </script>';
             });
@@ -45,7 +45,7 @@ class WPBoosterFrontend
             add_filter('the_content', function ($content) {
                 return $this->add_img_lazy_markup($content);
 //                return preg_replace_callback('/(<\s*img[^>]+)(src\s*=\s*"[^"]+")([^>]+>)/i', array($this, 'preg_lazyload'), $content);
-            });
+            }, 15);
         }
     }
 
@@ -67,7 +67,8 @@ class WPBoosterFrontend
 
             $src = $img->getAttribute('src');
             if (false === filter_var($src, FILTER_VALIDATE_URL)) {
-                $src = $img->getAttribute('data-src');
+                //$src = $img->getAttribute('data-src');
+                $src = urlencode($src);
             }
 
             $img->setAttribute('src', WPBOOSTER_URL . 'img/loader.gif');
@@ -80,7 +81,7 @@ class WPBoosterFrontend
             }
 
             $imgClass = $img->getAttribute('class');
-            $img->setAttribute('class', $imgClass . ' wpb-lazy');
+            $img->setAttribute('class', $imgClass . ' lazy');
 
             $no_script = $post->createElement('noscript');
             $no_script->appendChild($clone);

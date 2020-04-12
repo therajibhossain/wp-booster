@@ -81,7 +81,8 @@ class WPBoosterCombined
 
                 if (isset($get_attr)) {
                     $href = $node->getAttribute($get_attr);
-                    $tag_src_html[] = $href;
+                    if (strpos($href, 'jquery.lazyload.min.js') === false)
+                        $tag_src_html[] = $href;
                 }
             }
         } else {
@@ -147,9 +148,11 @@ class WPBoosterCombined
         return false;
     }
 
-    private function blacklist_file($src){
+    private function blacklist_file($src)
+    {
 
     }
+
     private function get_content($src)
     {
         $explode = explode(home_url(), $src);
