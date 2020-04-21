@@ -205,20 +205,20 @@ class WPBoosterSetting
     /*updating all admin settings*/
     public function wpb_update_setting()
     {
-        //conf::log('text'); die;
-
-
-
         $return = ['response' => 0, 'message' => 'noting changed!'];
         $form_data = array();
+
+        /*actually we are sanitizing this $_POST['formData'] just after few lines*/
         parse_str($_POST['formData'], $form_data);
 
         /*validating CSRF*/
-        $token = $form_data['_token'];
+        $token = sanitize_text_field($form_data['_token']);
         if (!isset($token) || !wp_verify_nonce($token, 'wpb_nonce')) wp_die("<br><br>YOU ARE NOT ALLOWED! ");
-        $option_name = $_POST['wpb_section'];
+        $option_name = sanitize_text_field($_POST['wpb_section']);
 
-        if (update_option($option_name, isset($form_data[$option_name]) ? $form_data[$option_name] : '')) {
+        /*sanitizing $_POST['formData'] by option name*/
+        $option_value = conf::sanitize_data($form_data[$option_name]);
+        if (update_option($option_name, isset($option_value) ? $option_value : '')) {
             conf::boot_settings($option_name);
             $return = ['response' => 1, 'message' => $option_name . '--- settings updated! To view update, refresh your site'];
         }

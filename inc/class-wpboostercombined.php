@@ -31,7 +31,7 @@ class WPBoosterCombined
 
         if ($combine_css || $combine_js) {
             $combine_option = $combine_css ? $combine_css : $combine_js;
-            $sec = $_POST['wpb_section'];
+            $sec = sanitize_text_field($_POST['wpb_section']);
             $sec_val = get_option($sec);
             update_option($sec, '');
 

@@ -94,6 +94,7 @@ trait WPBoosterConfig
         return self::option_tabs()[self::option_name()[2]]['fields'][0]['name'];
     }
 
+    /*writing custom log messages*/
     public static function log($message, $type = 'error')
     {
         $type = isset($type) ? $type . " :: " : $type;
@@ -103,5 +104,19 @@ trait WPBoosterConfig
         $file = fopen(WPBOOSTER_LOGS . WPBOOSTER_NAME . '.txt', "a");
         echo fwrite($file, "[" . date('d-M-y h:i:s') . "] $type" . $message . "\n");
         fclose($file);
+    }
+
+    /*sanitizing input values using sanitize_text_field()*/
+    public static function sanitize_data($input)
+    {
+        if (is_array($input) && $input) {
+            $output = array();
+            foreach ($input as $key => $value) {
+                $output[$key] = sanitize_text_field($value);
+            }
+        } else {
+            $output = sanitize_text_field($input);
+        }
+        return $output;
     }
 }
