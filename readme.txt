@@ -1,7 +1,7 @@
 === WP Booster ===
 Contributors: Rajib Hossain, Team Getweb, Inc
-Tags: speedup, minify, optimize, lazy-load
-Donate link: http://blog.futtta.be/2013/10/21/do-not-donate-to-me/
+Tags: wp-booster, booster, speedup, minify, optimize, lazy-load
+Donate link: http://getwebinc.com
 Requires at least: 4.4
 Tested up to: 5.4
 Requires PHP: 5.6
