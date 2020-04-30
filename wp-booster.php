@@ -1,13 +1,13 @@
 <?php
 /**
- * Copyright (C) Getweb, Inc. Ltd. All Rights Reserved
+ * Copyright (C) M. A. Monim. All Rights Reserved
  *
  * Plugin Name: WP Booster
- * Plugin URI: https://getwebinc.com/plugins/wp-booster
- * Description: WP-Booster optimizes your site to make it faster & efficient
+ * Plugin URI: https://www.upwork.com/freelancers/~01a7e2b3d17cd8070a
+ * Description: WP-Booster - Optimize your website to load very fast & efficiently.
  * Version: 1.0.0
- * Author: Rajib Hossain, Team Getweb, Inc.
- * Author URI: https://getwebinc.com
+ * Author: M. A. Monim
+ * Author URI: https://www.upwork.com/freelancers/~01a7e2b3d17cd8070a
  * Text Domain: wp-booster
  * Domain Path: /languages
  * License: GPL v2 or later
